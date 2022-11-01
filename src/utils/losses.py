@@ -367,6 +367,33 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
     return grad_penalty
 
 
+def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discriminator, device):
+    # TODO
+    raise NotImplementedError()
+    batch_size, c, h, w = real_images.shape
+    alpha = torch.rand(batch_size, 1)
+    alpha = alpha.expand(batch_size, real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
+    alpha = alpha.to(device)
+
+    real_images = real_images.to(device)
+    interpolates = alpha * real_images + ((1 - alpha) * fake_images)
+    interpolates = interpolates.to(device)
+    interpolates = autograd.Variable(interpolates, requires_grad=True)
+
+    # ????? Is this correct?
+    references = (1 - alpha) * real_images + (alpha * fake_images)
+    references = references.to(device)
+    references = autograd.Variable(references, requires_grad=True) # nograd?
+
+    fake_dict = discriminator((interpolates, references), real_labels, eval=False)
+    # ??? what to do with this?
+    grads = cal_deriv(inputs=interpolates, outputs=fake_dict["adv_output"], device=device)
+    grads = grads.view(grads.size(0), -1)
+
+    grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
+    return grad_penalty
+
+
 def cal_dra_penalty(real_images, real_labels, discriminator, device):
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1, 1, 1)
