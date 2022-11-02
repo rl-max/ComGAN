@@ -552,6 +552,30 @@ class WORKER(object):
                         style_mixing_p=self.cfgs.STYLEGAN.style_mixing_p,
                         stylegan_update_emas=False,
                         cal_trsp_cost=True if self.LOSS.apply_lo else False)
+                    # <new> create images for self-gan
+                    if self.LOSS.jointgan_gen_pair == "self":
+                        fake_images2, fake_labels2, _, _, _, _, _ = sample.generate_images(
+                            z_prior=self.MODEL.z_prior,
+                            truncation_factor=-1.0,
+                            batch_size=self.OPTIMIZATION.batch_size,
+                            z_dim=self.MODEL.z_dim,
+                            num_classes=self.DATA.num_classes,
+                            y_sampler="totally_random",
+                            radius=self.LOSS.radius,
+                            generator=self.Gen,
+                            discriminator=self.Dis,
+                            is_train=True,
+                            LOSS=self.LOSS,
+                            RUN=self.RUN,
+                            MODEL=self.MODEL,
+                            device=self.local_rank,
+                            generator_mapping=self.Gen_mapping,
+                            generator_synthesis=self.Gen_synthesis,
+                            is_stylegan=self.is_stylegan,
+                            style_mixing_p=self.cfgs.STYLEGAN.style_mixing_p,
+                            stylegan_update_emas=False,
+                            cal_trsp_cost=True if self.LOSS.apply_lo else False)
+                        fake_images2_ = self.AUG.series_augment(fake_images2)
 
                     # blur images for stylegan3-r
                     if self.MODEL.backbone == "stylegan3" and self.STYLEGAN.stylegan3_cfg == "stylegan3-r" and self.blur_init_sigma != "N/A":
@@ -564,7 +588,7 @@ class WORKER(object):
                     # apply differentiable augmentations if "apply_diffaug" is True
                     fake_images_ = self.AUG.series_augment(fake_images)
 
-                    get_real_dict = self.LOSS.relativistic or "jointgan." in self.MODEL.backbone
+                    get_real_dict = (self.LOSS.relativistic or "jointgan." in self.MODEL.backbone) and self.LOSS.jointgan_gen_pair == "N/A"
                     # <new> implement JointGAN
                     if get_real_dict:
                         real_image_basket, real_label_basket = self.sample_data_basket()
@@ -572,15 +596,25 @@ class WORKER(object):
                         real_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
                         real_images_ = self.AUG.series_augment(real_images)
 
+                    # DISCRIMINATOR FORWARD
                     if "models.jointgan" == self.MODEL.base_dir:
-                        fake_images_ = (fake_images_, real_images_)
-
-                    # calculate adv_output, embed, proxy, and cls_output using the discriminator
-                    fake_dict = self.Dis(fake_images_, fake_labels)
-
-                    # <new> revert
-                    if "models.jointgan" == self.MODEL.base_dir:
-                        fake_images_ = fake_images_[0]
+                        if self.LOSS.jointgan_gen_pair == "N/A":
+                            fake_dict = self.Dis((fake_images_, real_images_), fake_labels)
+                            real_dict = self.Dis((real_images_, fake_images_), real_labels)
+                        elif self.LOSS.jointgan_gen_pair == "self":
+                            fake_dict = self.Dis((fake_images_, fake_images2_.detach()), fake_labels)
+                            real_dict = self.Dis((fake_images2_.detach(), fake_images_), fake_labels2)
+                        elif self.LOSS.jointgan_gen_pair == "same":
+                            fake_dict = self.Dis((fake_images_, fake_images_.detach()), fake_labels)
+                            real_dict = self.Dis((fake_images_.detach(), fake_images_), fake_labels)
+                        else:
+                            raise ValueError(f"Invalid `LOSS.jointgan_gen_pair`: {self.LOSS.jointgan_gen_pair}")
+                    elif self.LOSS.relativistic:
+                        fake_dict = self.Dis(fake_images_, fake_labels)
+                        real_dict = self.Dis(real_images_, real_labels)
+                    else:
+                        # calculate adv_output, embed, proxy, and cls_output using the discriminator
+                        fake_dict = self.Dis(fake_images_, fake_labels)
 
                     # accumulate discriminator output informations for logging
                     if self.AUG.apply_ada or self.AUG.apply_apa:
@@ -599,11 +633,7 @@ class WORKER(object):
                     if self.LOSS.adv_loss == "MH":
                         gen_acml_loss = self.LOSS.mh_lambda * self.LOSS.g_loss(DDP=self.DDP, **fake_dict, )
                     # <new> compute loss for real image provided fake image as reference
-                    elif get_real_dict:
-                        if "models.jointgan" == self.MODEL.base_dir:
-                            real_dict = self.Dis((real_images_, fake_images_), real_labels)
-                        else:
-                            real_dict = self.Dis(real_images_, real_labels)
+                    elif self.LOSS.relativistic or "jointgan." in self.MODEL.backbone:
                         gen_acml_loss = self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
                                                          d_logit_real=real_dict["adv_output"], DDP=self.DDP)
                     else:

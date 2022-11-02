@@ -222,6 +222,7 @@ class Configurations(object):
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
         # <new> use custom targets for lsgan
+        self.LOSS.jointgan_gen_pair = "N/A"  # default, self, same
         self.LOSS.lsgan_gen_real_target = 0  # this is enabled for Ra-LSGAN or Joint-LSGAN.
         self.LOSS.lsgan_gen_fake_target = 1
         self.LOSS.lsgan_disc_real_target = 1
