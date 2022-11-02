@@ -1,0 +1,15 @@
+DATA:
+  name: "CIFAR10"
+  img_size: 32
+  num_classes: 10
+MODEL:
+  # WARNING: unlike other nets, SNGAN config use resnet
+  backbone: "resnet"
+  base_dir: "models.jointgan"
+  
+  g_cond_mtd: "cBN"
+  d_cond_mtd: "PD"
+  apply_d_sn: True
+LOSS:
+  adv_loss: "hinge_relativistic"
+  relativistic: True

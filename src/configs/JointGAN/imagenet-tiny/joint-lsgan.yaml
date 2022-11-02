@@ -1,5 +1,6 @@
 MODEL:
-  backbone: "jointgan.resnet"
+  backbone: "resnet"
+  base_dir: "models.jointgan"
 LOSS:
   adv_loss: "least_square_relativistic"
   relativistic: True

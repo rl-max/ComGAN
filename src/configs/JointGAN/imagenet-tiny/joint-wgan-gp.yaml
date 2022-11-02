@@ -3,7 +3,9 @@ DATA:
   img_size: 64
   num_classes: 200
 MODEL:
-  backbone: "jointgan.resnet"
+  backbone: "resnet"
+  base_dir: "models.jointgan"
+
 LOSS:
   adv_loss: "wasserstein_relativistic"
   apply_gp: True

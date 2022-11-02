@@ -58,6 +58,7 @@ class Configurations(object):
         # type of backbone architectures of the generator and discriminator \in
         # ["deep_conv", "resnet", "big_resnet", "big_resnet_deep_legacy", "big_resnet_deep_studiogan", "stylegan2", "stylegan3"]
         self.MODEL.backbone = "resnet"
+        self.MODEL.base_dir = "models"
         # conditioning method of the generator \in ["W/O", "cBN", "cAdaIN"]
         self.MODEL.g_cond_mtd = "W/O"
         # conditioning method of the discriminator \in ["W/O", "AC", "PD", "MH", "MD", "2C","D2DCE", "SPD"]
@@ -221,6 +222,7 @@ class Configurations(object):
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
         # <new> use custom targets for lsgan
+        self.LOSS.jointgan_gen_pair = "N/A"  # default, self, same
         self.LOSS.lsgan_gen_real_target = 0  # this is enabled for Ra-LSGAN or Joint-LSGAN.
         self.LOSS.lsgan_gen_fake_target = 1
         self.LOSS.lsgan_disc_real_target = 1
@@ -441,6 +443,7 @@ class Configurations(object):
                     fake_target=self.LOSS.lsgan_gen_fake_target,
                 ),
                 "wasserstein_relativistic": losses.g_wasserstein_relative,
+                "hinge_relativistic": losses.g_hinge_relative,
             }
 
             d_losses = {
@@ -461,7 +464,8 @@ class Configurations(object):
                     real_target=self.LOSS.lsgan_disc_real_target,
                     fake_target=self.LOSS.lsgan_disc_fake_target,
                 ),
-                "wasserstein_relativistic":losses.d_wasserstein
+                "wasserstein_relativistic": losses.d_wasserstein,
+                "hinge_relativistic": losses.d_hinge,
             }
 
             self.LOSS.g_loss = g_losses[self.LOSS.adv_loss]
