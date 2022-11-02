@@ -3,7 +3,8 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
-  backbone: "deep_conv"
+  # WARNING: unlike other nets, SNGAN config use resnet
+  backbone: "resnet"
   base_dir: "models.jointgan"
   
   g_cond_mtd: "cBN"
