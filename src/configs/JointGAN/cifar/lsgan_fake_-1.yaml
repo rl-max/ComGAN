@@ -5,6 +5,7 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
+  base_dir: "models.jointgan"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:

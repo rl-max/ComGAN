@@ -278,7 +278,7 @@ class WORKER(object):
                     fake_images_ = self.AUG.series_augment(fake_images)
 
                     # <new> implement JointGAN
-                    if "jointgan." in self.MODEL.backbone:
+                    if "models.jointgan" == self.MODEL.base_dir:
                         real_images_, fake_images_ = (real_images_, fake_images_.detach()), (fake_images_, real_images_.detach())
 
                     # calculate adv_output, embed, proxy, and cls_output using the discriminator
@@ -286,7 +286,7 @@ class WORKER(object):
                     fake_dict = self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
 
                     # <new> implement JointGAN
-                    if "jointgan." in self.MODEL.backbone:
+                    if "models.jointgan" == self.MODEL.base_dir:
                         real_images_, fake_images_ = real_images_[0], fake_images_[0]
 
                     # accumulate discriminator output informations for logging
@@ -375,7 +375,7 @@ class WORKER(object):
 
                     # apply gradient penalty regularization to train wasserstein GAN
                     if self.LOSS.apply_gp:
-                        if "jointgan." in self.MODEL.backbone:
+                        if "models.jointgan" == self.MODEL.base_dir:
                             gp_loss = losses.cal_grad_penalty_with_reference(real_images=real_images,
                                                                              real_labels=real_labels,
                                                                              fake_images=fake_images,
@@ -572,14 +572,14 @@ class WORKER(object):
                         real_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
                         real_images_ = self.AUG.series_augment(real_images)
 
-                    if "jointgan." in self.MODEL.backbone:
+                    if "models.jointgan" == self.MODEL.base_dir:
                         fake_images_ = (fake_images_, real_images_)
 
                     # calculate adv_output, embed, proxy, and cls_output using the discriminator
                     fake_dict = self.Dis(fake_images_, fake_labels)
 
                     # <new> revert
-                    if "jointgan." in self.MODEL.backbone:
+                    if "models.jointgan" == self.MODEL.base_dir:
                         fake_images_ = fake_images_[0]
 
                     # accumulate discriminator output informations for logging
@@ -600,7 +600,7 @@ class WORKER(object):
                         gen_acml_loss = self.LOSS.mh_lambda * self.LOSS.g_loss(DDP=self.DDP, **fake_dict, )
                     # <new> compute loss for real image provided fake image as reference
                     elif get_real_dict:
-                        if "jointgan." in self.MODEL.backbone:
+                        if "models.jointgan" == self.MODEL.base_dir:
                             real_dict = self.Dis((real_images_, fake_images_), real_labels)
                         else:
                             real_dict = self.Dis(real_images_, real_labels)

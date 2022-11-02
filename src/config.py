@@ -58,6 +58,7 @@ class Configurations(object):
         # type of backbone architectures of the generator and discriminator \in
         # ["deep_conv", "resnet", "big_resnet", "big_resnet_deep_legacy", "big_resnet_deep_studiogan", "stylegan2", "stylegan3"]
         self.MODEL.backbone = "resnet"
+        self.MODEL.base_dir = "models"
         # conditioning method of the generator \in ["W/O", "cBN", "cAdaIN"]
         self.MODEL.g_cond_mtd = "W/O"
         # conditioning method of the discriminator \in ["W/O", "AC", "PD", "MH", "MD", "2C","D2DCE", "SPD"]

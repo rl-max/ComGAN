@@ -19,9 +19,9 @@ import utils.misc as misc
 def load_generator_discriminator(DATA, OPTIMIZATION, MODEL, STYLEGAN, MODULES, RUN, device, logger):
     if device == 0:
         logger.info("Build a Generative Adversarial Network.")
-    module = __import__("models.{backbone}".format(backbone=MODEL.backbone), fromlist=["something"])
+    module = __import__(f"{MODEL.base_dir}.{MODEL.backbone}",fromlist=["something"])
     if device == 0:
-        logger.info("Modules are located on './src/models.{backbone}'.".format(backbone=MODEL.backbone))
+        logger.info(f"Modules are located on './src/{MODEL.base_dir}.{MODEL.backbone}'")
 
     if MODEL.backbone in ["stylegan2", "stylegan3"]:
         channel_base, channel_max = 32768 if MODEL.backbone == "stylegan3" or DATA.img_size >= 512 or \
@@ -62,7 +62,7 @@ def load_generator_discriminator(DATA, OPTIMIZATION, MODEL, STYLEGAN, MODULES, R
 
         Gen_mapping, Gen_synthesis = Gen.mapping, Gen.synthesis
 
-        module = __import__("models.stylegan2", fromlist=["something"]) # always use StyleGAN2 discriminator
+        module = __import__(f"{MODEL.base_dir}.stylegan2", fromlist=["something"]) # always use StyleGAN2 discriminator
         Dis = module.Discriminator(c_dim=dis_c_dim,
                                    img_resolution=DATA.img_size,
                                    img_channels=DATA.img_channels,

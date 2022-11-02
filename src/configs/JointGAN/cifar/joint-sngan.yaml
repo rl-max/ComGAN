@@ -3,7 +3,9 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
-  backbone: "jointgan.deep_conv"
+  backbone: "deep_conv"
+  base_dir: "models.jointgan"
+  
   g_cond_mtd: "cBN"
   d_cond_mtd: "PD"
   apply_d_sn: True
