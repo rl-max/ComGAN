@@ -36,6 +36,7 @@ class Configurations(object):
         self.define_modules()
 
     def load_base_cfgs(self):
+        # Set the default configuration
         # -----------------------------------------------------------------------------
         # Data settings
         # -----------------------------------------------------------------------------
@@ -411,6 +412,7 @@ class Configurations(object):
 
     def _overwrite_cfgs(self, cfg_file):
         with open(cfg_file, 'r') as f:
+            #load yaml configurations
             yaml_cfg = yaml.load(f, Loader=yaml.FullLoader)
             for super_cfg_name, attr_value in yaml_cfg.items():
                 for attr, value in attr_value.items():
