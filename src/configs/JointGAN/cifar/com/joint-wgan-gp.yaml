@@ -3,12 +3,12 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
-  backbone: "deep_conv"
+  backbone: "resnet"
   base_dir: "models.jointgan"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "wasserstein_relativistic"
+  relativistic: True
   apply_gp: True
   gp_lambda: 10.0
-  relativistic: True
