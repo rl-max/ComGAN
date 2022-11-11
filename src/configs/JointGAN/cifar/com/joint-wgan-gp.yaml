@@ -5,8 +5,6 @@ DATA:
 MODEL:
   backbone: "resnet"
   base_dir: "models.jointgan"
-  g_conv_dim: "N/A"
-  d_conv_dim: "N/A"
 LOSS:
   adv_loss: "wasserstein_relativistic"
   relativistic: True
