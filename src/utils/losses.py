@@ -370,7 +370,7 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
     grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
     return grad_penalty
 
-
+'''
 def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discriminator, device):
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1)
@@ -394,6 +394,7 @@ def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discr
 
     grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
     return grad_penalty
+'''
 
 
 def cal_dra_penalty(real_images, real_labels, discriminator, device):

@@ -279,7 +279,7 @@ class WORKER(object):
 
                     # <new> implement JointGAN
                     if "models.jointgan" == self.MODEL.base_dir:
-                        real_images_, fake_images_ = (real_images_, fake_images_.detach()), (fake_images_, real_images_.detach())
+                        real_images_, fake_images_ = (real_images_, fake_images_.detach()), (fake_images_.detach(), real_images_)
 
                     # calculate adv_output, embed, proxy, and cls_output using the discriminator
                     real_dict = self.Dis(real_images_, real_labels)
@@ -376,17 +376,20 @@ class WORKER(object):
                     # apply gradient penalty regularization to train wasserstein GAN
                     if self.LOSS.apply_gp:
                         if "models.jointgan" == self.MODEL.base_dir:
-                            gp_loss = losses.cal_grad_penalty_with_reference(real_images=real_images,
-                                                                             real_labels=real_labels,
-                                                                             fake_images=fake_images,
-                                                                             discriminator=self.Dis,
-                                                                             device=self.local_rank)
+                            _real_images = torch.cat([real_images, fake_images.detach()], dim=1)
+                            _fake_images = torch.cat([fake_images.detach(), real_images], dim=1)
+                            gp_loss = losses.cal_grad_penalty(real_images=_real_images,
+                                                            real_labels=real_labels,
+                                                            fake_images=_fake_images,
+                                                            discriminator=self.Dis,
+                                                            device=self.local_rank)
                         else:
                             gp_loss = losses.cal_grad_penalty(real_images=real_images,
                                                             real_labels=real_labels,
                                                             fake_images=fake_images,
                                                             discriminator=self.Dis,
                                                             device=self.local_rank)
+                    
                         dis_acml_loss += self.LOSS.gp_lambda * gp_loss
 
                     # apply deep regret analysis regularization to train wasserstein GAN
