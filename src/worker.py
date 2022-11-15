@@ -382,7 +382,8 @@ class WORKER(object):
                                                             real_labels=real_labels,
                                                             fake_images=_fake_images,
                                                             discriminator=self.Dis,
-                                                            device=self.local_rank)
+                                                            device=self.local_rank, 
+                                                            input_concat=True)
                         else:
                             gp_loss = losses.cal_grad_penalty(real_images=real_images,
                                                             real_labels=real_labels,
