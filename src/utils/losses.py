@@ -366,6 +366,7 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
     interpolates = autograd.Variable(interpolates, requires_grad=True)
     fake_dict = discriminator(interpolates, real_labels, input_concat, eval=False)
     grads = cal_deriv(inputs=interpolates, outputs=fake_dict["adv_output"], device=device)
+    print(grads.size())
     grads = grads.view(grads.size(0), -1)
 
     grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
