@@ -362,7 +362,7 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
 
     real_images = real_images.to(device)
     interpolates = alpha * real_images + ((1 - alpha) * fake_images)
-    print(interpolates)
+    print(interpolates.shape)
     interpolates = interpolates.to(device)
     interpolates = autograd.Variable(interpolates, requires_grad=True)
     fake_dict = discriminator(interpolates, real_labels, input_concat, eval=False)
