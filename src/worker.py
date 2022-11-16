@@ -276,7 +276,7 @@ class WORKER(object):
                     # apply differentiable augmentations if "apply_diffaug" or "apply_ada" is True
                     real_images_ = self.AUG.series_augment(real_images)
                     fake_images_ = self.AUG.series_augment(fake_images)
-
+                    
                     # <new> implement JointGAN
                     if "models.jointgan" == self.MODEL.base_dir:
                         real_images_, fake_images_ = (real_images_, fake_images_.detach()), (fake_images_.detach(), real_images_)
@@ -309,6 +309,7 @@ class WORKER(object):
                         dis_acml_loss = self.LOSS.d_loss(DDP=self.DDP, **real_dict)
                         dis_acml_loss += self.LOSS.d_loss(fake_dict["adv_output"], self.lossy, DDP=self.DDP)
                     else:
+                        print("here")
                         dis_acml_loss = self.LOSS.d_loss(d_logit_real=real_dict["adv_output"], d_logit_fake=fake_dict["adv_output"], DDP=self.DDP)
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
