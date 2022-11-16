@@ -377,8 +377,6 @@ class WORKER(object):
                     if self.LOSS.apply_gp:
                         if "models.jointgan" == self.MODEL.base_dir:
                             _real_images = torch.cat([real_images, fake_images.detach()], dim=1)
-                            print(_real_images.shape)
-                            raise NotImplementedError
                             _fake_images = torch.cat([fake_images.detach(), real_images], dim=1)
                             gp_loss = losses.cal_grad_penalty(real_images=_real_images,
                                                             real_labels=real_labels,
