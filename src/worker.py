@@ -309,7 +309,6 @@ class WORKER(object):
                         dis_acml_loss = self.LOSS.d_loss(DDP=self.DDP, **real_dict)
                         dis_acml_loss += self.LOSS.d_loss(fake_dict["adv_output"], self.lossy, DDP=self.DDP)
                     else:
-                        print("here")
                         dis_acml_loss = self.LOSS.d_loss(d_logit_real=real_dict["adv_output"], d_logit_fake=fake_dict["adv_output"], DDP=self.DDP)
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
@@ -377,8 +376,9 @@ class WORKER(object):
                     # apply gradient penalty regularization to train wasserstein GAN
                     if self.LOSS.apply_gp:
                         if "models.jointgan" == self.MODEL.base_dir:
-                            _real_images = torch.cat([real_images, fake_images.detach()], dim=1)
-                            _fake_images = torch.cat([fake_images.detach(), real_images], dim=1)
+                            print(real_images.shape, fake_images.shape)
+                            _real_images = torch.cat([real_images, fake_images], dim=1).detach()
+                            _fake_images = torch.cat([fake_images, real_images], dim=1).detach()
                             gp_loss = losses.cal_grad_penalty(real_images=_real_images,
                                                             real_labels=real_labels,
                                                             fake_images=_fake_images,
