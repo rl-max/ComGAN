@@ -376,12 +376,11 @@ class WORKER(object):
                     # apply gradient penalty regularization to train wasserstein GAN
                     if self.LOSS.apply_gp:
                         if "models.jointgan" == self.MODEL.base_dir:
-                            print(real_images.shape, fake_images.shape)
-                            _real_images = torch.cat([real_images, fake_images], dim=1).detach()
-                            _fake_images = torch.cat([fake_images, real_images], dim=1).detach()
-                            gp_loss = losses.cal_grad_penalty(real_images=_real_images,
+                            cat_real_images = torch.cat([real_images, fake_images], dim=1)
+                            cat_fake_images = torch.cat([fake_images, real_images], dim=1)
+                            gp_loss = losses.cal_grad_penalty(real_images = cat_real_images,
                                                             real_labels=real_labels,
-                                                            fake_images=_fake_images,
+                                                            fake_images=cat_fake_images,
                                                             discriminator=self.Dis,
                                                             device=self.local_rank, 
                                                             input_concat=True)
