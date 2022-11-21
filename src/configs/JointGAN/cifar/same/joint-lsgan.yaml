@@ -8,7 +8,9 @@ MODEL:
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
-  adv_loss: "wasserstein_relativistic"
-  apply_gp: True
-  gp_lambda: 10.0
+  adv_loss: "least_square_relativistic"
+  jointgan_gen_pair: "same"
   relativistic: True
+OPTIMIZATION:
+  d_updates_per_step: 2
+  total_steps: 200000

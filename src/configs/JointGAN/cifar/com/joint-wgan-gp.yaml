@@ -1,0 +1,12 @@
+DATA:
+  name: "CIFAR10"
+  img_size: 32
+  num_classes: 10
+MODEL:
+  backbone: "resnet"
+  base_dir: "models.jointgan"
+LOSS:
+  adv_loss: "wasserstein_relativistic"
+  relativistic: True
+  apply_gp: True
+  gp_lambda: 10.0

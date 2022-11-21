@@ -128,6 +128,7 @@ def load_configs_initialize_training():
 
     gpus_per_node, rank = torch.cuda.device_count(), torch.cuda.current_device()
 
+    #use cfgs from config.py
     cfgs = config.Configurations(args.cfg_file)
     cfgs.update_cfgs(run_cfgs, super="RUN")
     cfgs.OPTIMIZATION.world_size = gpus_per_node * cfgs.RUN.total_nodes
