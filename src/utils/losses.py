@@ -354,7 +354,11 @@ def latent_optimise(zs, fake_labels, generator, discriminator, batch_size, lo_ra
         return zs, trsf_cost
 
 
-def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, device, input_concat=False):
+def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, device, is_jointgan=False):
+    if is_jointgan:
+        real_images = torch.cat([real_images, fake_images], dim=1)
+        fake_images = torch.cat([fake_images, real_images], dim=1)
+
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1)
     alpha = alpha.expand(batch_size, real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
@@ -364,13 +368,16 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
     interpolates = alpha * real_images + (1 - alpha) * fake_images
     interpolates = interpolates.to(device)
     interpolates = autograd.Variable(interpolates, requires_grad=True)
-    fake_dict = discriminator(interpolates, real_labels, input_concat, eval=False)
+    if is_jointgan:
+        fake_dict = discriminator(interpolates, real_labels, input_concat=True, eval=False)
+    else:
+        fake_dict = discriminator(interpolates, real_labels, eval=False)
     grads = cal_deriv(inputs=interpolates, outputs=fake_dict["adv_output"], device=device)
     grads = grads.view(grads.size(0), -1)
     grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
     return grad_penalty
 
-
+'''
 def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discriminator, device):
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1)
@@ -394,8 +401,7 @@ def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discr
 
     grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
     return grad_penalty
-
-
+'''
 
 def cal_dra_penalty(real_images, real_labels, discriminator, device):
     batch_size, c, h, w = real_images.shape

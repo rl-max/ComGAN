@@ -375,22 +375,13 @@ class WORKER(object):
 
                     # apply gradient penalty regularization to train wasserstein GAN
                     if self.LOSS.apply_gp:
-                        if "models.jointgan" == self.MODEL.base_dir:
-                            cat_real_images = torch.cat([real_images, fake_images], dim=1)
-                            cat_fake_images = torch.cat([fake_images, real_images], dim=1)
-                            gp_loss = losses.cal_grad_penalty(real_images = cat_real_images,
-                                                            real_labels=real_labels,
-                                                            fake_images=cat_fake_images,
-                                                            discriminator=self.Dis,
-                                                            device=self.local_rank, 
-                                                            input_concat=True)
-                        else:
-                            gp_loss = losses.cal_grad_penalty(real_images=real_images,
-                                                            real_labels=real_labels,
-                                                            fake_images=fake_images,
-                                                            discriminator=self.Dis,
-                                                            device=self.local_rank)
-                    
+                        is_jointgan = ("models.jointgan" == self.MODEL.base_dir)
+                        gp_loss = losses.cal_grad_penalty(real_images = real_images,
+                                                        real_labels=real_labels,
+                                                        fake_images=fake_images,
+                                                        discriminator=self.Dis,
+                                                        device=self.local_rank, 
+                                                        is_jointgan=is_jointgan)
                         dis_acml_loss += self.LOSS.gp_lambda * gp_loss
 
                     # apply deep regret analysis regularization to train wasserstein GAN
