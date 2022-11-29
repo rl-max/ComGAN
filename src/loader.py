@@ -20,6 +20,7 @@ from torch.utils.data.distributed import DistributedSampler
 import torch
 import torch.distributed as dist
 import wandb
+import copy
 
 from data_util import Dataset_
 from utils.style_ops import grid_sample_gradfix
@@ -211,6 +212,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     # -----------------------------------------------------------------------------
     Gen, Gen_mapping, Gen_synthesis, Dis, Gen_ema, Gen_ema_mapping, Gen_ema_synthesis, ema =\
         model.load_generator_discriminator(DATA=cfgs.DATA,
+                                           LOSS = cfgs.LOSS,
                                            OPTIMIZATION=cfgs.OPTIMIZATION,
                                            MODEL=cfgs.MODEL,
                                            STYLEGAN=cfgs.STYLEGAN,
@@ -218,6 +220,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                            RUN=cfgs.RUN,
                                            device=local_rank,
                                            logger=logger)
+    rGen = copy.deepcopy(Gen)
 
     if local_rank != 0:
         custom_ops.verbosity = "none"
@@ -285,6 +288,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                         synchronized_bn=cfgs.RUN.synchronized_bn,
                                         apply_g_ema=cfgs.MODEL.apply_g_ema,
                                         device=local_rank)
+                    
 
     # -----------------------------------------------------------------------------
     # load a pre-trained network (InceptionV3, SwAV, DINO, or Swin-T)
@@ -378,6 +382,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
         num_eval=num_eval,
         loss_list_dict=loss_list_dict,
         metric_dict_during_train=metric_dict_during_train,
+        rGen=rGen
     )
 
     # -----------------------------------------------------------------------------

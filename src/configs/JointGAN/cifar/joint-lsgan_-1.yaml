@@ -4,13 +4,11 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
-  base_dir: "models.jointgan"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
-  adv_loss: "least_square_relativistic"
-  jointgan_gen_pair: "self"
-  relativistic: True
+  adv_loss: "least_square"
+  relative_sample: "real"
   lsgan_gen_real_target: 0
   lsgan_gen_fake_target: 0
   lsgan_disc_real_target: 1

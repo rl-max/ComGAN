@@ -20,14 +20,8 @@ class Discriminator(nn.Module):
                  num_classes, d_init, d_depth, mixed_precision, MODULES, MODEL):
         super(Discriminator, self).__init__()
 
-        input_image_channels = 3
-
-        # <new> jointgan types
-        if MODEL.jointgan_type == "concat":
-            input_image_channels *= 2
-        else:
-            raise ValueError(f"Invalid jointgan_type `{MODEL.jointgan_type}` was given.")
-
+        input_image_channels = 3 * 2
+    
         self.in_dims = [input_image_channels] + [64, 128]
         self.out_dims = [64, 128, 256]
 
@@ -101,20 +95,13 @@ class Discriminator(nn.Module):
         if d_init:
             ops.init_weights(self.modules, d_init)
 
-    def forward(self, x, label, input_concat=False, eval=False, adc_fake=False):
+    def forward(self, x, label, eval=False, adc_fake=False):
         with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
             embed, proxy, cls_output = None, None, None
             mi_embed, mi_proxy, mi_cls_output = None, None, None
             info_discrete_c_logits, info_conti_mu, info_conti_var = None, None, None
-            if not input_concat:
-                _x, reference_image = x
-                if self.MODEL.jointgan_type == "concat":  # <new> concat mode
-                    h = torch.cat([_x, reference_image], dim=1)
-                else:
-                     h = _x
-            else:
-                h = x
 
+            h = x
             for index, blocklist in enumerate(self.blocks):
                 for block in blocklist:
                     h = block(h)

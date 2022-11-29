@@ -16,10 +16,15 @@ from utils.ema import EmaStylegan2
 import utils.misc as misc
 
 
-def load_generator_discriminator(DATA, OPTIMIZATION, MODEL, STYLEGAN, MODULES, RUN, device, logger):
+def load_generator_discriminator(DATA, LOSS, OPTIMIZATION, MODEL, STYLEGAN, MODULES, RUN, device, logger):
     if device == 0:
         logger.info("Build a Generative Adversarial Network.")
-    module = __import__(f"{MODEL.base_dir}.{MODEL.backbone}",fromlist=["something"])
+    if LOSS.relative_sample == 'N/A' or MODEL.jointgan_arch == 'rgan' or MODEL.jointgan_arch == 'ragan':
+        base_dir = 'models' 
+    else:
+        base_dir = 'models.jointgan'
+
+    module = __import__(f"{base_dir}.{MODEL.backbone}",fromlist=["something"])
     if device == 0:
         logger.info(f"Modules are located on './src/{MODEL.base_dir}.{MODEL.backbone}'")
 
