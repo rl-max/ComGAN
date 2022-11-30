@@ -560,10 +560,11 @@ class WORKER(object):
                 with torch.cuda.amp.autocast() if self.RUN.mixed_precision and not self.is_stylegan else misc.dummy_context_mgr() as mpc:
                     fake_images, fake_labels, zs, fake_images_eps, zs_eps, trsp_cost, ws, info_discrete_c, info_conti_c = generate_images(generator=self.Gen)
                     
-                    if self.LOSS.relative_sample == 'real':
+                    real_images, ref_images = None, None
+                    if self.LOSS.relative_sample == 'real' or self.LOSS.add_real != 'N/A':
                         real_image_basket, real_label_basket = self.sample_data_basket()
-                        ref_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
-                        ref_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
+                        real_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
+                        real_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
                     elif self.LOSS.relative_sample == 'fake':
                         Gen = self.rGen if self.use_rGen else self.Gen
                         ref_images, ref_labels, _, ref_images_eps, _, _, _, _, _ = generate_images(generator=Gen)
@@ -580,14 +581,28 @@ class WORKER(object):
                         if blur_size > 0:
                             f = torch.arange(-blur_size, blur_size + 1, device=fake_images.device).div(blur_sigma).square().neg().exp2()
                             fake_images = upfirdn2d.filter2d(fake_images, f / f.sum())
-                            if self.is_jointgan:
+                            if real_images != None:
+                                real_images = upfirdn2d.filter2d(real_images, f / f.sum())
+                            if ref_images != None:
                                 ref_images = upfirdn2d.filter2d(ref_images, f / f.sum())
 
                     fake_images_ = self.AUG.series_augment(fake_images)
-                    if self.is_jointgan:
+                    if real_images != None:
+                        real_images_ = self.AUG.series_augment(real_images)
+                    if ref_images != None:
                         ref_images_ = self.AUG.series_augment(ref_images)
 
                     if self.is_input_concat:
+                        if self.LOSS.add_real == 'add_object':
+                            add_real_images_, add_fake_images_ = self.concat(real_images_, fake_images_)
+                        elif self.LOSS.add_real == 'intpol_sample':
+                            batch_size, c, h, w = real_images_.shape
+                            alpha = dist.beta.Beta.sample((batch_size, 1, 1, 1))
+                            alpha = alpha.expand(batch_size, real_images_.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
+                            alpha = alpha.to(self.local_rank)
+                            ref_images_ = alpha * real_images_ + (1 - alpha) * ref_images_
+                        elif real_images != None:
+                            ref_images_ = real_images_
                         real_images_, fake_images_ = self.concat(ref_images_, fake_images_)
                         real_images, fake_images = self.concat(ref_images, fake_images)
                         fake_images_eps = torch.cat([fake_images_eps, ref_images], dim=1)
@@ -596,6 +611,9 @@ class WORKER(object):
                     if self.is_jointgan:
                         real_dict = self.Dis(real_images_, real_labels)
                         fake_dict = self.Dis(fake_images_, fake_labels)
+                        if self.LOSS.add_real == 'add_object':
+                            add_real_dict = self.Dis(add_real_images_, real_labels)
+                            add_fake_dict = self.Dis(add_fake_images_, fake_labels)
                     else:
                         # calculate adv_output, embed, proxy, and cls_output using the discriminator
                         fake_dict = self.Dis(fake_images_, fake_labels)
@@ -620,6 +638,9 @@ class WORKER(object):
                     elif self.is_jointgan:
                         gen_acml_loss = self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
                                                          d_logit_real=real_dict["adv_output"], DDP=self.DDP)
+                        if self.LOSS.add_real == 'add_object':
+                            gen_acml_loss += self.LOSS.g_loss(d_logit_fake=add_fake_dict["adv_output"],
+                                                              d_logit_real=add_real_dict["adv_output"], DDP=self.DDP)
                     else:
                         gen_acml_loss = self.LOSS.g_loss(fake_dict["adv_output"], DDP=self.DDP)
 
