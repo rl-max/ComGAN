@@ -606,8 +606,8 @@ class WORKER(object):
                             ref_images = real_images
                         real_images_, fake_images_ = self.concat(ref_images_, fake_images_)
                         real_images, fake_images = self.concat(ref_images, fake_images)
-                        print(fake_images_eps, 'fake_images_eps')
-                        fake_images_eps = torch.cat([fake_images_eps, ref_images], dim=1)
+                        if fake_images_eps != None:
+                            fake_images_eps = torch.cat([fake_images_eps, ref_images], dim=1)
 
                     # DISCRIMINATOR FORWARD
                     if self.is_jointgan:
