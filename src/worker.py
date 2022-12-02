@@ -67,7 +67,7 @@ class WORKER(object):
         self.run_name = run_name
         self.Gen = Gen
         self.rGen = None
-        self.use_rGen = (self.MODEL.rsam_update != 'N/A')
+        self.use_rGen = (cfgs.MODEL.rsam_update != 'N/A')
         if self.use_rGen:
             assert rGen != None, "rGen which is set to None cannot be used"
             self.rGen = rGen
