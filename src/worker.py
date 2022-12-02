@@ -282,8 +282,7 @@ class WORKER(object):
 
                     aug_real_images = self.AUG.series_augment(real_images)
                     aug_fake_images = self.AUG.series_augment(fake_images)
-                    print(aug_real_images.shape, aug_fake_images.shape)
-
+            
                     if self.is_input_concat:
                         aug_real_images, aug_fake_images = self.concat(aug_real_images, aug_fake_images)
                         real_images, fake_images = self.concat(real_images, fake_images)
@@ -604,6 +603,7 @@ class WORKER(object):
                             ref_images_ = alpha * real_images_ + (1 - alpha) * ref_images_
                         elif real_images != None:
                             ref_images_ = real_images_
+                            ref_images = real_images
                         real_images_, fake_images_ = self.concat(ref_images_, fake_images_)
                         real_images, fake_images = self.concat(ref_images, fake_images)
                         fake_images_eps = torch.cat([fake_images_eps, ref_images], dim=1)
