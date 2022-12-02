@@ -299,7 +299,6 @@ class WORKER(object):
                         real_dict_train = self.Dis(real_images_, real_labels)
                         fake_dict_train= self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
                     
-                    print(aug_real_images.shape, aug_fake_images.shape)
                     real_dict = self.Dis(aug_real_images, real_labels)
                     fake_dict = self.Dis(aug_fake_images, fake_labels, adc_fake=self.adc_fake)
                     if not self.LOSS.mixup:
@@ -764,9 +763,9 @@ class WORKER(object):
         return gen_acml_loss
 
     def concat(self, real_images, fake_images):
-        real_images = torch.cat([real_images, fake_images], dim=1)
-        fake_images = torch.cat([fake_images, real_images], dim=1)
-        return real_images, fake_images
+        real_images_ = torch.cat([real_images, fake_images], dim=1)
+        fake_images_ = torch.cat([fake_images, real_images], dim=1)
+        return real_images_, fake_images_
 
     def interpolate_models(self, state_dict_1, state_dict_2, weight):
         return {key: weight * state_dict_1[key] + (1 - weight) * state_dict_2[key]
