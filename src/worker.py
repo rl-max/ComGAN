@@ -611,11 +611,11 @@ class WORKER(object):
 
                     # DISCRIMINATOR FORWARD
                     if self.is_jointgan:
-                        real_dict = self.Dis(real_images_, real_labels)
-                        fake_dict = self.Dis(fake_images_, fake_labels)
+                        real_dict = self.Dis(real_images_)
+                        fake_dict = self.Dis(fake_images_)
                         if self.LOSS.add_real == 'add_object':
-                            add_real_dict = self.Dis(add_real_images_, real_labels)
-                            add_fake_dict = self.Dis(add_fake_images_, fake_labels)
+                            add_real_dict = self.Dis(add_real_images_)
+                            add_fake_dict = self.Dis(add_fake_images_)
                     else:
                         # calculate adv_output, embed, proxy, and cls_output using the discriminator
                         fake_dict = self.Dis(fake_images_, fake_labels)
