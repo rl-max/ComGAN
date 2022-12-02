@@ -26,7 +26,7 @@ def load_generator_discriminator(DATA, LOSS, OPTIMIZATION, MODEL, STYLEGAN, MODU
 
     module = __import__(f"{base_dir}.{MODEL.backbone}",fromlist=["something"])
     if device == 0:
-        logger.info(f"Modules are located on './src/{MODEL.base_dir}.{MODEL.backbone}'")
+        logger.info(f"Modules are located on './src/{base_dir}.{MODEL.backbone}'")
 
     if MODEL.backbone in ["stylegan2", "stylegan3"]:
         channel_base, channel_max = 32768 if MODEL.backbone == "stylegan3" or DATA.img_size >= 512 or \
@@ -67,7 +67,7 @@ def load_generator_discriminator(DATA, LOSS, OPTIMIZATION, MODEL, STYLEGAN, MODU
 
         Gen_mapping, Gen_synthesis = Gen.mapping, Gen.synthesis
 
-        module = __import__(f"{MODEL.base_dir}.stylegan2", fromlist=["something"]) # always use StyleGAN2 discriminator
+        module = __import__(f"{base_dir}.stylegan2", fromlist=["something"]) # always use StyleGAN2 discriminator
         Dis = module.Discriminator(c_dim=dis_c_dim,
                                    img_resolution=DATA.img_size,
                                    img_channels=DATA.img_channels,
