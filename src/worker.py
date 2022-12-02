@@ -282,6 +282,7 @@ class WORKER(object):
 
                     aug_real_images = self.AUG.series_augment(real_images)
                     aug_fake_images = self.AUG.series_augment(fake_images)
+                    print(aug_real_images.shape, aug_fake_images.shape)
 
                     if self.is_input_concat:
                         aug_real_images, aug_fake_images = self.concat(aug_real_images, aug_fake_images)
