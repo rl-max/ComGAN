@@ -280,27 +280,28 @@ class WORKER(object):
                     if self.AUG.apply_apa:
                         real_images = apa_aug.apply_apa_aug(real_images, fake_images.detach(), self.aa_p, self.local_rank)
 
-                    n_real_images = self.AUG.series_augment(real_images)
-                    n_fake_images = self.AUG.series_augment(fake_images)
+                    aug_real_images = self.AUG.series_augment(real_images)
+                    aug_fake_images = self.AUG.series_augment(fake_images)
 
                     if self.is_input_concat:
-                        n_real_images, n_fake_images = self.concat(n_real_images, n_fake_images)
+                        aug_real_images, aug_fake_images = self.concat(aug_real_images, aug_fake_images)
                         real_images, fake_images = self.concat(real_images, fake_images)
                     
                     alpha = 1.0
                     if self.LOSS.mixup:
-                        batch_size, c, h, w = n_real_images.shape
+                        batch_size, c, h, w = aug_real_images.shape
                         alpha = dist.beta.Beta.sample((batch_size, 1, 1, 1))
-                        alpha = alpha.expand(batch_size, n_real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
+                        alpha = alpha.expand(batch_size, aug_real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
                         alpha = alpha.to(self.local_rank)
-                        real_images_ = alpha * n_real_images + (1 - alpha) * n_fake_images
-                        fake_images_ = (1 - alpha) * n_real_images + alpha * n_fake_images
+                        real_images_ = alpha * aug_real_images + (1 - alpha) * aug_fake_images
+                        fake_images_ = (1 - alpha) * aug_real_images + alpha * aug_fake_images
                         alpha = alpha.view(batch_size, 1)
                         real_dict_train = self.Dis(real_images_, real_labels)
                         fake_dict_train= self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
                     
-                    real_dict = self.Dis(n_real_images, real_labels)
-                    fake_dict = self.Dis(n_fake_images, fake_labels, adc_fake=self.adc_fake)
+                    print(aug_real_images.shape, aug_fake_images.shape)
+                    real_dict = self.Dis(aug_real_images, real_labels)
+                    fake_dict = self.Dis(aug_fake_images, fake_labels, adc_fake=self.adc_fake)
                     if not self.LOSS.mixup:
                         real_dict_train, fake_dict_train = real_dict, fake_dict
 
