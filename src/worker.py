@@ -878,7 +878,7 @@ class WORKER(object):
                                                                        style_mixing_p=0.0,
                                                                        stylegan_update_emas=False,
                                                                        cal_trsp_cost=False)
-        print(type(fake_images), fake_images.shape)
+        
         misc.plot_img_canvas(images=fake_images.detach().cpu(),
                              save_path=join(self.RUN.save_dir,
                              "figures/{run_name}/generated_canvas_{step}.png".format(run_name=self.run_name, step=current_step)),
