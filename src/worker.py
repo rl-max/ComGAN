@@ -886,6 +886,7 @@ class WORKER(object):
                              logger=self.logger,
                              logging=self.global_rank == 0 and self.logger)
 
+        print(type(fake_images), fake_images.shape)
         if self.RUN.train:
             wandb.log({"generated_images": wandb.Image(fake_images)}, step=self.wandb_step)
 
