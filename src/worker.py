@@ -649,7 +649,7 @@ class WORKER(object):
                         apply_w = self.LOSS.apply_real_weight if use_real else False
                         gen_acml_loss = self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
                                                          d_logit_real=real_dict["adv_output"], 
-                                                         apply_real_weight = apply_w
+                                                         apply_real_weight = apply_w,
                                                          DDP=self.DDP)
                         if self.LOSS.add_real == 'add_object':
                             gen_acml_loss += self.LOSS.g_loss(d_logit_fake=add_fake_dict["adv_output"],
