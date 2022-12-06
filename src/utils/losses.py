@@ -196,23 +196,28 @@ def enable_allreduce(dict_):
 ###########################################
 # <new> losses for relativistic training. #
 ###########################################
-def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP):
-    loss = F.softplus(d_logit_real - d_logit_fake)
+def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
+    real_weight = 0.5 if apply_real_weight else 1.0
+    loss = real_weight * F.softplus(d_logit_real - d_logit_fake)
     return loss.mean()
 
-def d_vanilla_rgan(d_logit_fake, DDP, d_logit_real=None, mixup_alpha = 1.0):
+
+def d_vanilla_rgan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     loss = F.softplus(d_logit_fake - d_logit_real)
     loss = (2*mixup_alpha - 1) * loss
     return loss.mean()
 
-def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP):
+
+def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
     # label=0 for first term, label=1 for second term.
-    real_loss = F.softplus(d_logit_real - torch.mean(d_logit_fake))
-    fake_loss = F.softplus(torch.mean(d_logit_real) - d_logit_fake)
+    real_weight = 0.5 if apply_real_weight else 1.0
+    real_loss = real_weight * F.softplus(d_logit_real - torch.mean(d_logit_fake))
+    fake_loss = real_weight * F.softplus(torch.mean(d_logit_real) - d_logit_fake)
     loss = (real_loss + fake_loss) / 2
     return loss.mean()
 
-def d_vanilla_ragan(d_logit_fake, DDP, d_logit_real=None, mixup_alpha = 1.0):
+
+def d_vanilla_ragan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     # label=1 for first term, label=0 for second term.
     real_loss = F.softplus(torch.mean(d_logit_fake) - d_logit_real)
     fake_loss = F.softplus(d_logit_fake - torch.mean(d_logit_real))
@@ -220,39 +225,47 @@ def d_vanilla_ragan(d_logit_fake, DDP, d_logit_real=None, mixup_alpha = 1.0):
     loss = (2*mixup_alpha - 1) * loss
     return loss.mean()
 
-def g_vanilla_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_vanilla(d_logit_fake, DDP)
-    else:
-        loss = F.softplus(d_logit_real) + F.softplus(-d_logit_fake)
-        return loss.mean()
 
-def g_ls_relative(d_logit_fake, DDP, d_logit_real=None, real_target=0, fake_target=1):
-    if d_logit_real is None:
-        return g_ls(d_logit_fake, DDP, fake_target=fake_target)
-    else:
-        real_target = torch.ones_like(d_logit_real) * real_target
-        fake_target = torch.ones_like(d_logit_real) * fake_target
-        loss = 0.5 * (d_logit_real - real_target) ** 2 + \
-               0.5 * (d_logit_fake - fake_target) ** 2
-        return loss.mean()
+def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
+    real_weight = 0.5 if apply_real_weight else 1.0
+    loss = real_weight * F.softplus(d_logit_real) + real_weight * F.softplus(-d_logit_fake)
+    return loss.mean()
 
-def g_hinge_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_hinge(d_logit_fake, DDP)
-    else:
-        loss = d_logit_real - d_logit_fake
-        return loss.mean()
 
-def g_wasserstein_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_wasserstein(d_logit_fake, DDP)
-    else:
-        loss = d_logit_real - d_logit_fake
-        return loss.mean()
+def d_logistic_prob(d_logit_real, d_logit_fake, DDP):
+    prob = F.softplus(d_logit_real) / (F.softplus(d_logit_real) + F.softplus(d_logit_fake)) 
+    loss =  F.binary_cross_entropy(prob, torch.ones_like(d_logit_real))
+    return loss
+
+
+def g_logistic_prob(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
+    real_weight = 0.5 if apply_real_weight else 1.0
+    prob = F.softplus(d_logit_fake) / (F.softplus(d_logit_fake) + F.softplus(d_logit_real))
+    loss = F.binary_cross_entropy(prob, real_weight * torch.ones_like(d_logit_real))
+    return loss
+
+
+def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=0, fake_target=1, apply_real_weight=False):
+    center = (real_target + fake_target) / 2
+    real_target = torch.ones_like(d_logit_real) * center if apply_real_weight else real_target
+    fake_target = torch.ones_like(d_logit_real) * center if apply_real_weight else fake_target
+    loss = 0.5 * (d_logit_real - real_target) ** 2 + \
+           0.5 * (d_logit_fake - fake_target) ** 2
+    return loss.mean()
+
+
+def g_hinge_joint(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
+    real_weight = 0.5 if apply_real_weight else 1.0
+    loss = real_weight * d_logit_real - real_weight * d_logit_fake
+    return loss.mean()
+
+
+def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, apply_real_weight=False):
+    real_weight = 0.5 if apply_real_weight else 1.0
+    loss = real_weight * d_logit_real - real_weight * d_logit_fake
+    return loss.mean()
 
 ###########################################
-
 
 def d_vanilla(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     d_loss = F.softplus(-d_logit_real) + F.softplus(d_logit_fake)

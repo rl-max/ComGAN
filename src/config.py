@@ -120,7 +120,7 @@ class Configurations(object):
         self.MODEL.info_num_conti_c = "N/A"
         # dimension of discrete c to use in InfoGAN (one-hot)
         self.MODEL.info_dim_discrete_c = "N/A"
-        # <new> jointgan type \in ["concat", "rgan", "ragan"]
+        # <new> jointgan architecture \in ["concat", "rgan", "ragan", "prob"]
         self.MODEL.jointgan_arch = "concat"
         # way to update a model that generates relative samples \in ["N/A", "step_fixed" ,"moving_avg"]
         self.MODEL.rsam_update = "N/A"
@@ -229,8 +229,10 @@ class Configurations(object):
         # whether to apply mixup when training the discriminator
         self.LOSS.mixup = False 
         # whether to additionally train on real sample when using fake/same relative sample
-        # \in ["N/A", "add_object", "intpol_sample"]
+        # \in ["N/A", "add_object", "add_sample", "intpol_sample"]
         self.LOSS.add_real = "N/A"
+        #whether to use different label for real-relative-objective when there is fake or same-relative-objective
+        self.LOSS.apply_real_weight = False
         # alpha value in Beta distribution in mixup
         self.LOSS.alpha = 0.2
         # <new> use custom targets for lsgan
@@ -448,17 +450,18 @@ class Configurations(object):
                 "wasserstein": losses.g_wasserstein,
                 "vanilla_rgan": losses.g_vanilla_rgan,
                 "vanilla_ragan": losses.g_vanilla_ragan,
-                "vanilla_relativistic": losses.g_vanilla_relative,
+                "vanilla_joint": losses.g_vanilla_joint,
+                "logistic_prob": losses.g_logistic_prob,
                 "logistic_rgan": losses.g_vanilla_rgan,
                 "logistic_ragan": losses.g_vanilla_ragan,
-                "logistic_relativistic": losses.g_vanilla_relative,
-                "least_square_relativistic": partial(
-                    losses.g_ls_relative,
+                "logistic_joint": losses.g_vanilla_joint,
+                "least_square_joint": partial(
+                    losses.g_ls_joint,
                     real_target=self.LOSS.lsgan_gen_real_target,
                     fake_target=self.LOSS.lsgan_gen_fake_target,
                 ),
-                "wasserstein_relativistic": losses.g_wasserstein_relative,
-                "hinge_relativistic": losses.g_hinge_relative,
+                "wasserstein_joint": losses.g_wasserstein_joint,
+                "hinge_joint": losses.g_hinge_joint,
             }
 
             d_losses = {
@@ -473,17 +476,18 @@ class Configurations(object):
                 "wasserstein": losses.d_wasserstein,
                 "vanilla_rgan": losses.d_vanilla_rgan,
                 "vanilla_ragan": losses.d_vanilla_ragan,
-                "vanilla_relativistic": losses.d_vanilla,
+                "vanilla_joint": losses.d_vanilla,
+                "logistic_prob": losses.d_logistic_prob,
                 "logistic_rgan": losses.d_vanilla_rgan,
                 "logistic_ragan": losses.d_vanilla_ragan,
-                "logistic_relativistic": losses.d_vanilla,
-                "least_square_relativistic": partial(
+                "logistic_joint": losses.d_vanilla,
+                "least_square_joint": partial(
                     losses.d_ls,
                     real_target=self.LOSS.lsgan_disc_real_target,
                     fake_target=self.LOSS.lsgan_disc_fake_target,
                 ),
-                "wasserstein_relativistic": losses.d_wasserstein,
-                "hinge_relativistic": losses.d_hinge,
+                "wasserstein_joint": losses.d_wasserstein,
+                "hinge_joint": losses.d_hinge,
             }
             
             loss = self.LOSS.adv_loss
@@ -492,8 +496,10 @@ class Configurations(object):
                     loss += '_rgan'
                 elif self.MODEL.jointgan_arch == 'ragan':
                     loss += '_ragan'
+                elif self.MODEL.joint_arch == 'prob':
+                    loss += '_prob'
                 else:
-                    loss += '_relativistic'
+                    loss += '_joint'
                 
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
@@ -696,12 +702,16 @@ class Configurations(object):
     def check_compatability(self):
         #write compatibility code
         assert self.LOSS.relative_sample in ["N/A", "real", "fake", "same"]
-        assert self.LOSS.add_real in ["N/A", "add_object", "intpol_sample"]
+        assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan", "prob"]
+        assert self.LOSS.add_real in ["N/A", "add_object", "add_sample", "intpol_sample"]
         assert self.MODEL.rsam_update in ["N/A", "step_fixed", "moving_avg"]
 
         if self.LOSS.relative_sample == 'N/A' or self.LOSS.relative_sample == 'real':
             assert self.LOSS.add_real == "N/A", "add_real can't be used if it is not jointgan or relative sample is already real."
             assert self.MODEL.rsam_update == "N/A", "rsam_update can't be used if it is not jointgan or relative sample is already real."
+        
+        if self.LOSS.add_real == 'N/A' or self.LOSS.add_real == 'intpol_sample':
+            assert self.LOSS.apply_real_weight == False, "apply_real_weight is only applicable when add_real_sample is add_object or add_sample"
 
         if self.RUN.distributed_data_parallel and self.RUN.mixed_precision:
             print("-"*120)
