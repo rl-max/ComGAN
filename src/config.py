@@ -496,7 +496,7 @@ class Configurations(object):
                     loss += '_rgan'
                 elif self.MODEL.jointgan_arch == 'ragan':
                     loss += '_ragan'
-                elif self.MODEL.joint_arch == 'prob':
+                elif self.MODEL.jointgan_arch == 'prob':
                     loss += '_prob'
                 else:
                     loss += '_joint'
