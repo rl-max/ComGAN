@@ -12,7 +12,7 @@ LOSS:
   adv_loss: "vanilla"
   relative_sample: "fake"
   align_to_real: True
-  add_real : "add_object"
+  add_real : "intpol_sample"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 200000
