@@ -198,7 +198,7 @@ class WORKER(object):
                        resume=self.best_step > 0 and resume)
             wandb.config.jointgan_arch = self.MODEL.jointgan_arch
             wandb.config.add_real = self.LOSS.add_real
-            wandb.config.rsam_update = self.LOSS.rsam_update
+            wandb.config.rsam_update = self.MODEL.rsam_update
             wandb.config.mixup = self.LOSS.mixup
             wandb.config.align_to_real = self.LOSS.align_to_real
 
