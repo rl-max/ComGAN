@@ -607,22 +607,24 @@ class WORKER(object):
                         alpha = alpha.expand(batch_size, real_images_.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
                         alpha = alpha.to(self.local_rank)
                         ref_images_ = alpha * real_images_ + (1 - alpha) * ref_images_
-                    
-                    if self.LOSS.relative_sample == 'real' or use_real:
-                        ref_images_ = real_images_
-                        ref_images = real_images
-
-                    if self.LOSS.add_real == 'add_object':
-                        add_real_images_, add_fake_images_ = real_images_, fake_images_
 
                     if self.is_input_concat:
-                        real_images_, fake_images_ = self.concat(ref_images_, fake_images_)
-                        real_images, fake_images = self.concat(ref_images, fake_images)
                         if self.LOSS.add_real == 'add_object':
-                            add_real_images_, add_fake_images_ = self.concat(add_real_images_, add_fake_images_)
+                            add_real_images_, add_fake_images_ = self.concat(real_images_, fake_images_)
+                        if ref_images != None:
+                            real_images_ = ref_images_
+                            real_images = ref_images
+                        real_images_, fake_images_ = self.concat(real_images_, fake_images_)
+                        real_images, fake_images = self.concat(real_images, fake_images)
                         if fake_images_eps != None:
-                            fake_images_eps = torch.cat([fake_images_eps, ref_images], dim=1)
-                        
+                            fake_images_eps = torch.cat([fake_images_eps, real_images], dim=1)
+                    elif self.is_rgan:
+                        if self.LOSS.add_real == 'add_object':
+                            add_real_images_, add_fake_images_ = real_images_, fake_images_
+                        if ref_images != None:
+                            real_images_ = ref_images_
+                            real_images = ref_images
+
                     # DISCRIMINATOR FORWARD
                     if self.is_jointgan:
                         real_dict = self.Dis(real_images_)
