@@ -615,7 +615,7 @@ class WORKER(object):
                     if self.LOSS.add_real == 'add_object':
                         add_real_images_, add_fake_images_ = real_images_, fake_images_
 
-                    if self.input_concat:
+                    if self.is_input_concat:
                         real_images_, fake_images_ = self.concat(ref_images_, fake_images_)
                         real_images, fake_images = self.concat(ref_images, fake_images)
                         if self.LOSS.add_real == 'add_object':
