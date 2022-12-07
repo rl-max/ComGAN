@@ -225,14 +225,15 @@ class Configurations(object):
         self.LOSS.lecam_ema_start_iter = "N/A"
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
-        self.LOSS.relative_sample = "N/A"  # \in [N/A, real, fake, same]
+        # \in [N/A, real, fake, same]
+        self.LOSS.relative_sample = "N/A"  
         # whether to apply mixup when training the discriminator
         self.LOSS.mixup = False 
         # whether to additionally train on real sample when using fake/same relative sample
         # \in ["N/A", "add_object", "add_sample", "intpol_sample"]
         self.LOSS.add_real = "N/A"
-        #whether to use different label for real-relative-objective when there is fake or same-relative-objective
-        self.LOSS.apply_real_weight = False
+        #whether to use fake label with respect to real sample when training fake sample against real sample
+        self.LOSS.align_to_real = False
         # alpha value in Beta distribution in mixup
         self.LOSS.alpha = 0.2
         # <new> use custom targets for lsgan
@@ -712,9 +713,6 @@ class Configurations(object):
             assert self.LOSS.add_real == "N/A", "add_real can't be used if it is not jointgan or relative sample is already real."
             assert self.MODEL.rsam_update == "N/A", "rsam_update can't be used if it is not jointgan or relative sample is already real."
         
-        if self.LOSS.add_real == 'N/A' or self.LOSS.add_real == 'intpol_sample':
-            assert self.LOSS.apply_real_weight == False, "apply_real_weight is only applicable when add_real_sample is add_object or add_sample"
-
         if self.RUN.distributed_data_parallel and self.RUN.mixed_precision:
             print("-"*120)
             print("Please use standing statistics (-std_stat) with -std_max and -std_step options for reliable evaluation!")

@@ -646,15 +646,15 @@ class WORKER(object):
                         gen_acml_loss = self.LOSS.mh_lambda * self.LOSS.g_loss(DDP=self.DDP, **fake_dict, )
                     # <new> compute loss for real image provided fake image as reference
                     elif self.is_jointgan:
-                        apply_w = self.LOSS.apply_real_weight if use_real else False
+                        align_to_real = self.LOSS.align_to_real if self.LOSS.relative_sample == 'real' or use_real else False
                         gen_acml_loss = self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
                                                          d_logit_real=real_dict["adv_output"], 
-                                                         apply_real_weight = apply_w,
+                                                         align_to_real = align_to_real,
                                                          DDP=self.DDP)
                         if self.LOSS.add_real == 'add_object':
                             gen_acml_loss += self.LOSS.g_loss(d_logit_fake=add_fake_dict["adv_output"],
                                                               d_logit_real=add_real_dict["adv_output"], 
-                                                              apply_real_weight = self.LOSS.apply_real_weight,
+                                                              align_to_real = self.LOSS.align_to_real,
                                                               DDP=self.DDP)
                     else:
                         gen_acml_loss = self.LOSS.g_loss(fake_dict["adv_output"], DDP=self.DDP)
