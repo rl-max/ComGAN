@@ -292,7 +292,7 @@ class WORKER(object):
                     alpha = 1.0
                     if self.LOSS.mixup:
                         batch_size, c, h, w = aug_real_images.shape
-                        alpha = self.beta.sample((batch_size, 1, 1, 1))
+                        alpha = self.beta.sample((batch_size, 1))
                         alpha = alpha.expand(batch_size, aug_real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
                         alpha = alpha.to(self.local_rank)
                         real_images_ = alpha * aug_real_images + (1 - alpha) * aug_fake_images
@@ -605,7 +605,7 @@ class WORKER(object):
 
                     if self.LOSS.add_real == 'intpol_sample':
                         batch_size, c, h, w = real_images_.shape
-                        alpha = self.uniform.sample((batch_size, 1, 1, 1))
+                        alpha = self.uniform.sample((batch_size, 1))
                         alpha = alpha.expand(batch_size, real_images_.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
                         alpha = alpha.to(self.local_rank)
                         ref_images_ = alpha * real_images_ + (1 - alpha) * ref_images_
