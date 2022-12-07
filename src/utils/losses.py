@@ -239,7 +239,7 @@ def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
 
 def d_logistic_prob(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     prob = F.softplus(d_logit_real) / (F.softplus(d_logit_real) + F.softplus(d_logit_fake)) 
-    print(prob)
+    print(prob >= 0)
     d_loss =  F.binary_cross_entropy(prob, mixup_alpha * torch.ones_like(d_logit_real))
     return d_loss
 
