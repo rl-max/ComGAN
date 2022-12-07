@@ -239,16 +239,15 @@ def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
 
 def d_logistic_prob(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     prob = F.softplus(d_logit_real) / (F.softplus(d_logit_real) + F.softplus(d_logit_fake)) 
-    print(prob >= 0)
-    d_loss =  F.binary_cross_entropy(prob, mixup_alpha * torch.ones_like(d_logit_real))
-    return d_loss
+    d_loss =  mixup_alpha * torch.log(prob) + (1 - mixup_alpha) * torch.log(1 - prob)
+    return d_loss.mean()
 
 
 def g_logistic_prob(d_logit_real, d_logit_fake, DDP, align_to_real=False):
     fake_label = 0.5 if align_to_real else 1.0
     prob = F.softplus(d_logit_fake) / (F.softplus(d_logit_fake) + F.softplus(d_logit_real))
-    g_loss = F.binary_cross_entropy(prob, fake_label * torch.ones_like(d_logit_real))
-    return g_loss
+    g_loss = fake_label * torch.log(prob) + (1 - fake_label) * torch.log(1 - prob)
+    return g_loss.mean()
 
 
 def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=0, fake_target=1, align_to_real=False):
