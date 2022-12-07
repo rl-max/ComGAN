@@ -4,7 +4,7 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
-  jointgan_arch: "ragan"
+  jointgan_arch: "prob"
   rsam_update: "N/A"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
@@ -12,7 +12,7 @@ LOSS:
   adv_loss: "vanilla"
   relative_sample: "fake"
   align_to_real: True
-  add_real : "intpol_sample"
+  add_real : "add_sample"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 200000
