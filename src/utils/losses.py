@@ -15,6 +15,8 @@ import numpy as np
 from utils.style_ops import conv2d_gradfix
 import utils.ops as ops
 
+BCE_loss = nn.BCEWithLogitsLoss()
+
 
 class GatherLayer(torch.autograd.Function):
     """
@@ -196,103 +198,138 @@ def enable_allreduce(dict_):
 ###########################################
 # <new> losses for relativistic training. #
 ###########################################
-def g_rgan(d_logit_real, d_logit_fake, DDP):
-    return torch.mean(F.softplus(d_logit_real - d_logit_fake))
+def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+    fake_label = 0.5 if align_to_real else 1.0
+    logit = d_logit_fake - d_logit_real
+    g_loss = BCE_loss(logit, fake_label * torch.ones_like(logit))
+    return g_loss
 
-def d_rgan(d_logit_fake, DDP, d_logit_real=None):
-    return torch.mean(F.softplus(d_logit_fake - d_logit_real))
 
-def g_ragan(d_logit_real, d_logit_fake, DDP):
+def d_vanilla_rgan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    logit = d_logit_real - d_logit_fake
+    d_loss = BCE_loss(logit, mixup_alpha * torch.ones_like(logit))
+    return d_loss
+
+
+def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_to_real=False):
     # label=0 for first term, label=1 for second term.
-    real_loss = F.softplus(d_logit_real - torch.mean(d_logit_fake))
-    fake_loss = F.softplus(-d_logit_fake + torch.mean(d_logit_real))
-    return torch.mean(real_loss + fake_loss) / 2
+    fake_label = 0.5 if align_to_real else 1.0
+    r_logit = d_logit_real - torch.mean(d_logit_fake)
+    f_logit = d_logit_fake - torch.mean(d_logit_real)
+    g_loss = BCE_loss(f_logit, fake_label * torch.ones_like(f_logit)) + \
+             BCE_loss(r_logit, (1 - fake_label) * torch.ones_like(r_logit))
+    return g_loss
 
-def d_ragan(d_logit_fake, DDP, d_logit_real=None):
+
+def d_vanilla_ragan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     # label=1 for first term, label=0 for second term.
-    real_loss = F.softplus(-d_logit_real + torch.mean(d_logit_fake))
-    fake_loss = F.softplus(d_logit_fake - torch.mean(d_logit_real))
-    return torch.mean(real_loss +fake_loss) / 2
+    r_logit = d_logit_real - torch.mean(d_logit_fake)
+    f_logit = d_logit_fake - torch.mean(d_logit_real)
+    d_loss = BCE_loss(r_logit, mixup_alpha * torch.ones_like(r_logit)) + \
+             BCE_loss(f_logit, (1 - mixup_alpha) * torch.ones_like(f_logit))
+    return d_loss
 
-def g_vanilla_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_vanilla(d_logit_fake, DDP)
-    else:
-        return torch.mean(F.softplus(d_logit_real)) + torch.mean(F.softplus(-d_logit_fake))
 
-def g_ls_relative(d_logit_fake, DDP, d_logit_real=None, real_target=0, fake_target=1):
-    if d_logit_real is None:
-        return g_ls(d_logit_fake, DDP, fake_target=fake_target)
-    else:
-        real_target = torch.ones_like(d_logit_real) * real_target
-        fake_target = torch.ones_like(d_logit_real) * fake_target
-        gen_loss = 0.5 * (d_logit_real - real_target) ** 2 + \
-                   0.5 * (d_logit_fake - fake_target) ** 2
+def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+    fake_label = 0.5 if align_to_real else 1.0
+    g_loss = BCE_loss(d_logit_fake, fake_label * torch.ones_like(d_logit_real)) + \
+             BCE_loss(d_logit_real, (1- fake_label) * torch.ones_like(d_logit_real))
+    return g_loss
 
-        return gen_loss.mean()
 
-def g_hinge_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_hinge(d_logit_fake, DDP)
-    else:
-        return torch.mean(d_logit_real - d_logit_fake)
+def d_logistic_prob(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    prob = F.softplus(d_logit_real) / (F.softplus(d_logit_real) + F.softplus(d_logit_fake)) 
+    d_loss =  mixup_alpha * -torch.log(prob + 1e-10) + (1 - mixup_alpha) * -torch.log(1 - prob + 1e-10)
+    return d_loss.mean()
 
-def g_wasserstein_relative(d_logit_fake, DDP, d_logit_real=None):
-    if d_logit_real is None:
-        return g_wasserstein(d_logit_fake, DDP)
-    else:
-        return torch.mean(d_logit_real - d_logit_fake)
+
+def g_logistic_prob(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+    fake_label = 0.5 if align_to_real else 1.0
+    prob = F.softplus(d_logit_fake) / (F.softplus(d_logit_fake) + F.softplus(d_logit_real))
+    g_loss = fake_label * -torch.log(prob + 1e-10) + (1 - fake_label) * -torch.log(1 - prob + 1e-10)
+    return g_loss.mean()
+
+
+def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=0, fake_target=1, align_to_real=False):
+    center = (real_target + fake_target) / 2
+    real_target = center if align_to_real else real_target
+    fake_target = center if align_to_real else fake_target
+    g_loss = (d_logit_real - real_target) ** 2 + (d_logit_fake - fake_target) ** 2
+    return g_loss.mean()
+
+
+def g_hinge_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+    g_loss = d_logit_real - d_logit_fake
+    if align_to_real:
+        g_loss = F.relu(g_loss)
+    return g_loss.mean()
+
+
+def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+    g_loss = d_logit_real - d_logit_fake
+    if align_to_real:
+        g_loss = F.relu(g_loss)
+    return g_loss.mean()
 
 ###########################################
 
-
-def d_vanilla(d_logit_real, d_logit_fake, DDP):
-    d_loss = torch.mean(F.softplus(-d_logit_real)) + torch.mean(F.softplus(d_logit_fake))
+def d_vanilla(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    d_loss = BCE_loss(d_logit_real, mixup_alpha * torch.ones_like(d_logit_real)) + \
+             BCE_loss(d_logit_fake, (1 - mixup_alpha) * torch.ones_like(d_logit_real))
     return d_loss
 
 
 def g_vanilla(d_logit_fake, DDP):
-    return torch.mean(F.softplus(-d_logit_fake))
+    g_loss = BCE_loss(d_logit_fake, torch.ones_like(d_logit_fake))
+    return g_loss
 
 
-def d_logistic(d_logit_real, d_logit_fake, DDP):
-    d_loss = F.softplus(-d_logit_real) + F.softplus(d_logit_fake)
-    return d_loss.mean()
+def d_logistic(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    d_loss = BCE_loss(d_logit_real, mixup_alpha * torch.ones_like(d_logit_real)) + \
+             BCE_loss(d_logit_fake, (1 - mixup_alpha) * torch.ones_like(d_logit_real))
+    return d_loss
 
 
 def g_logistic(d_logit_fake, DDP):
-    # basically same as g_vanilla.
-    return F.softplus(-d_logit_fake).mean()
+    g_loss = BCE_loss(d_logit_fake, torch.ones_like(d_logit_fake))
+    return g_loss
 
 
-def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0):
-    real_target = torch.ones_like(d_logit_real) * real_target
-    fake_target = torch.ones_like(d_logit_real) * fake_target
-    d_loss = 0.5 * (d_logit_real - real_target) ** 2 + \
-             0.5 * (d_logit_fake - fake_target) ** 2
+def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, mixup_alpha = 1.0):
+    d_loss = (d_logit_real - real_target) ** 2 + (d_logit_fake - fake_target) ** 2
+    if mixup_alpha < 1.0:
+        d_loss_rev = (d_logit_real - fake_target) ** 2 + (d_logit_fake - real_target) ** 2
+        d_loss = mixup_alpha * d_loss + (1 - mixup_alpha) * d_loss_rev
     return d_loss.mean()
 
 
 def g_ls(d_logit_fake, DDP, fake_target=1):
-    fake_target = torch.ones_like(d_logit_fake) * fake_target
-    gen_loss = 0.5 * (d_logit_fake - fake_target)**2
-    return gen_loss.mean()
+    g_loss = (d_logit_fake - fake_target)**2
+    return g_loss.mean()
 
 
-def d_hinge(d_logit_real, d_logit_fake, DDP):
-    return torch.mean(F.relu(1. - d_logit_real)) + torch.mean(F.relu(1. + d_logit_fake))
+def d_hinge(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    d_loss = F.relu(1. - d_logit_real) + F.relu(1. + d_logit_fake)
+    if mixup_alpha < 1.0:
+        d_loss_rev = F.relu(1. - d_logit_fake) + F.relu(1. + d_logit_real)
+        d_loss = mixup_alpha * d_loss + (1 - mixup_alpha) * d_loss_rev
+    return d_loss.mean()
 
 
 def g_hinge(d_logit_fake, DDP):
-    return -torch.mean(d_logit_fake)
+    g_loss = -d_logit_fake
+    return g_loss.mean()
 
 
-def d_wasserstein(d_logit_real, d_logit_fake, DDP):
-    return torch.mean(d_logit_fake - d_logit_real)
+def d_wasserstein(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
+    d_loss = d_logit_fake - d_logit_real
+    d_loss = (2*mixup_alpha - 1) * d_loss
+    return d_loss.mean()
 
 
 def g_wasserstein(d_logit_fake, DDP):
-    return -torch.mean(d_logit_fake)
+    g_loss = -d_logit_fake
+    return g_loss.mean()
 
 
 def crammer_singer_loss(adv_output, label, DDP, **_):
@@ -354,52 +391,47 @@ def latent_optimise(zs, fake_labels, generator, discriminator, batch_size, lo_ra
         return zs, trsf_cost
 
 
-def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, device, is_jointgan=False):
-    if is_jointgan:
-        real_images = torch.cat([real_images, fake_images], dim=1)
-        fake_images = torch.cat([fake_images, real_images], dim=1)
-
+def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, device):
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1)
     alpha = alpha.expand(batch_size, real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
     alpha = alpha.to(device)
 
     real_images = real_images.to(device)
-    interpolates = alpha * real_images + (1 - alpha) * fake_images
+    interpolates = alpha * real_images + ((1 - alpha) * fake_images)
     interpolates = interpolates.to(device)
     interpolates = autograd.Variable(interpolates, requires_grad=True)
-    if is_jointgan:
-        fake_dict = discriminator(interpolates, real_labels, input_concat=True, eval=False)
-    else:
-        fake_dict = discriminator(interpolates, real_labels, eval=False)
+    fake_dict = discriminator(interpolates, real_labels, eval=False)
     grads = cal_deriv(inputs=interpolates, outputs=fake_dict["adv_output"], device=device)
     grads = grads.view(grads.size(0), -1)
-    grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
+
+    grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean()
     return grad_penalty
 
 '''
-def cal_grad_penalty_with_reference(real_images, real_labels, fake_images, discriminator, device):
+def cal_grad_penalty_jointgan(real_images, real_labels, fake_images, discriminator, device):
+    real_images, fake_images = real_images
     batch_size, c, h, w = real_images.shape
     alpha = torch.rand(batch_size, 1)
     alpha = alpha.expand(batch_size, real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
     alpha = alpha.to(device)
 
     real_images = real_images.to(device)
-    interpolates = alpha * real_images + (1 - alpha) * fake_images
-    interpolates = interpolates.to(device)
-    interpolates = autograd.Variable(interpolates, requires_grad=True)
+    intpol1 = alpha * real_images + (1 - alpha) * fake_images
+    intpol1 = intpol1.to(device)
+    intpol1 = autograd.Variable(intpol1, requires_grad=True)
 
-    references = (1 - alpha) * real_images + alpha * fake_images
-    references = references.to(device)
-    references = autograd.Variable(references, requires_grad=True)
+    intpol2 = (1 - alpha) * real_images + alpha * fake_images
+    intpol2 = intpol2.to(device)
+    intpol2 = autograd.Variable(intpol2, requires_grad=True)
 
-    fake_dict = discriminator((interpolates, references), real_labels, eval=False)
+    fake_dict = discriminator((intpol1, intpol2), real_labels, eval=False)
     
-    grads1 = cal_deriv(inputs=interpolates, outputs=fake_dict["adv_output"], device=device).view(batch_size, -1)
-    grads2 = cal_deriv(inputs=references, outputs=fake_dict["adv_output"], device=device).view(batch_size, -1)
+    grads1 = cal_deriv(inputs=intpol1, outputs=fake_dict["adv_output"], device=device).view(batch_size, -1)
+    grads2 = cal_deriv(inputs=intpol2, outputs=fake_dict["adv_output"], device=device).view(batch_size, -1)
     grads = torch.cat([grads1, grads2], dim=1)
 
-    grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() + interpolates[:,0,0,0].mean()*0
+    grad_penalty = ((grads.norm(2, dim=1) - 1)**2).mean() 
     return grad_penalty
 '''
 

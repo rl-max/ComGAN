@@ -310,7 +310,7 @@ def apply_standing_statistics(generator, standing_max_batch, standing_step, DATA
             rand_batch_size = random.randint(1, batch_size_per_gpu)
         else:
             rand_batch_size = random.randint(1, batch_size_per_gpu) * OPTIMIZATION.world_size
-        fake_images, fake_labels, _, _, _, _, _ = sample.generate_images(z_prior=MODEL.z_prior,
+        fake_images, fake_labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=MODEL.z_prior,
                                                                    truncation_factor=-1,
                                                                    batch_size=rand_batch_size,
                                                                    z_dim=MODEL.z_dim,
@@ -504,7 +504,7 @@ def save_images_png(data_loader, generator, discriminator, is_generate, num_imag
             start = i * batch_size
             end = start + batch_size
             if is_generate:
-                images, labels, _, _, _, _, _= sample.generate_images(z_prior=z_prior,
+                images, labels, _, _, _, _, _, _, _= sample.generate_images(z_prior=z_prior,
                                                                  truncation_factor=truncation_factor,
                                                                  batch_size=batch_size,
                                                                  z_dim=z_dim,
