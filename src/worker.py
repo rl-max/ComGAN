@@ -191,6 +191,11 @@ class WORKER(object):
 
         if self.global_rank == 0:
             resume = False if self.RUN.freezeD > -1 else True
+            wandb.config.jointgan_arch = self.MODEL.jointgan_arch
+            wandb.config.add_real = self.LOSS.add_real
+            wandb.config.rsam_update = self.LOSS.rsam_update
+            wandb.config.mixup = self.LOSS.mixup
+            wandb.config.align_to_real = self.LOSS.align_to_real
             wandb.init(project=self.RUN.project,
                        entity=self.RUN.entity,
                        name=self.run_name,
