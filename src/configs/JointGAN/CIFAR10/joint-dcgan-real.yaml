@@ -4,7 +4,7 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
-  jointgan_arch: "concat"
+  jointgan_arch: "prob"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
