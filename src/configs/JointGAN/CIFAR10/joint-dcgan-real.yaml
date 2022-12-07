@@ -10,9 +10,9 @@ MODEL:
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "vanilla"
-  relative_sample: "real"
+  relative_sample: "fake"
   align_to_real: True
-  add_real : "N/A"
+  add_real : "add_object"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 200000
