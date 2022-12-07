@@ -503,7 +503,8 @@ class Configurations(object):
                     loss += '_prob'
                 else:
                     loss += '_joint'
-                
+            
+            print("LOSS LOADED", loss)
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
 
