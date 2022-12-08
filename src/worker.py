@@ -191,6 +191,7 @@ class WORKER(object):
 
         if self.global_rank == 0:
             resume = False if self.RUN.freezeD > -1 else True
+            wandb.login()
             wandb.init(project=self.RUN.project,
                        entity=self.RUN.entity,
                        name=self.run_name,
