@@ -621,10 +621,10 @@ class WORKER(object):
                         if ref_images != None:
                             real_images_ = ref_images_
                             real_images = ref_images
-                        real_images_, fake_images_ = self.concat(real_images_, fake_images_)
-                        real_images, fake_images = self.concat(real_images, fake_images)
                         if fake_images_eps != None:
                             fake_images_eps = torch.cat([fake_images_eps, real_images], dim=1)
+                        real_images_, fake_images_ = self.concat(real_images_, fake_images_)
+                        real_images, fake_images = self.concat(real_images, fake_images)
                     elif self.is_rgan:
                         if self.LOSS.add_real == 'add_object':
                             add_real_images_, add_fake_images_ = real_images_, fake_images_
