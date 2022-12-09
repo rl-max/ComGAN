@@ -4,13 +4,13 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
-  jointgan_arch: "concat"
+  jointgan_arch: "prob"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "vanilla"
   relative_sample: "real"
-  align_to_real : True
+  align_to_real : False
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 200000
