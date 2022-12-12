@@ -657,12 +657,12 @@ class WORKER(object):
                     if 'r' in self.LOSS.jointgan_object:
                         gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict["adv_output"],
                                                           d_logit_real = real_dict["adv_output"], 
-                                                          center_label = self.real_center,
+                                                          center_label = self.LOSS.real_center,
                                                           DDP=self.DDP)
                     if 'f' in self.LOSS.jointgan_object:
                         gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_f["adv_output"],
                                                           d_logit_real = real_dict_f["adv_output"], 
-                                                          center_label = self.fake_center,
+                                                          center_label = self.LOSS.fake_center,
                                                           DDP=self.DDP)
                     if 's' in self.LOSS.jointgan_object:
                         gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_s["adv_output"],
