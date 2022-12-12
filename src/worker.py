@@ -655,19 +655,19 @@ class WORKER(object):
                     # <new> compute loss for real image provided fake image as reference
                     gen_acml_loss = 0
                     if 'r' in self.LOSS.jointgan_object:
-                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict["adv_output"],
-                                                          d_logit_real = real_dict["adv_output"], 
-                                                          center_label = self.LOSS.real_center,
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
+                                                          d_logit_real=real_dict["adv_output"], 
+                                                          center_label=self.LOSS.real_center,
                                                           DDP=self.DDP)
                     if 'f' in self.LOSS.jointgan_object:
-                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_f["adv_output"],
-                                                          d_logit_real = real_dict_f["adv_output"], 
-                                                          center_label = self.LOSS.fake_center,
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake=fake_dict_f["adv_output"],
+                                                          d_logit_real=real_dict_f["adv_output"], 
+                                                          center_label=self.LOSS.fake_center,
                                                           DDP=self.DDP)
                     if 's' in self.LOSS.jointgan_object:
-                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_s["adv_output"],
-                                                          d_logit_real = real_dict_s["adv_output"], 
-                                                          center_label = False,
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake=fake_dict_s["adv_output"],
+                                                          d_logit_real=real_dict_s["adv_output"], 
+                                                          center_label=False,
                                                           DDP=self.DDP)
                     if self.LOSS.jointgan_object == 'N/A':
                         if self.LOSS.adv_loss == "MH":
