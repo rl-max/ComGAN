@@ -4,6 +4,6 @@ DATA:
   num_classes: 10
 LOSS:
   adv_loss: "wasserstein"
-  relative_sample: "real"
+  jointgan_object: "r"
   apply_gp: True
   gp_lambda: 10.0

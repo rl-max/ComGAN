@@ -10,4 +10,4 @@ MODEL:
   apply_d_sn: True
 LOSS:
   adv_loss: "hinge"
-  relative_sample: "real"
+  jointgan_object: "r"

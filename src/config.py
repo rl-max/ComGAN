@@ -133,7 +133,6 @@ class Configurations(object):
         # loss settings
         # -----------------------------------------------------------------------------
         self.LOSS = misc.make_empty_object()
-
         # type of adversarial loss \in ["vanilla", "logistic", "least_squere", "wasserstein", "hinge", "MH"]
         self.LOSS.adv_loss = "vanilla"
         # balancing hyperparameter for conditional image generation
@@ -225,28 +224,25 @@ class Configurations(object):
         self.LOSS.lecam_ema_start_iter = "N/A"
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
-        # \in [N/A, real, fake, same]
-        self.LOSS.relative_sample = "N/A"  
+
+        # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same); '-' represents sum of objects;
+        # \in [N/A, r, f, s, r-f, r-s, f-s, r-f-s]
+        self.LOSS.jointgan_object = "N/A"  
+        #whether to learn fake sample with respect to the median label (e.g 0.5) in case of real object (for G)
+        self.LOSS.real_center = False
+        #whether to learn fake sample with respect to the median label (e.g 0.5) in case of fake object (for G)
+        self.LOSS.fake_center = False
         # whether to apply mixup when training the discriminator
         self.LOSS.mixup = False 
-        # whether to additionally train on real sample when using fake/same relative sample
-        # \in ["N/A", "add_object", "add_sample", "intpol_sample"]
-        self.LOSS.add_real = "N/A"
-        #whether to use fake label with respect to real sample when training fake sample against real sample
-        self.LOSS.align_to_real = False
         # alpha value in Beta distribution in mixup
         self.LOSS.alpha = 0.2
         # <new> use custom targets for lsgan
-        self.LOSS.lsgan_gen_real_target = 0  # this is enabled for Ra-LSGAN or Joint-LSGAN.
-        self.LOSS.lsgan_gen_fake_target = 1
-        self.LOSS.lsgan_disc_real_target = 1
-        self.LOSS.lsgan_disc_fake_target = 0
-
+        self.LOSS.lsgan_real_target = 1
+        self.LOSS.lsgan_fake_target = 0
         # -----------------------------------------------------------------------------
         # optimizer settings
         # -----------------------------------------------------------------------------
         self.OPTIMIZATION = misc.make_empty_object()
-
         # type of the optimizer for GAN training \in ["SGD", RMSprop, "Adam"]
         self.OPTIMIZATION.type_ = "Adam"
         # number of batch size for GAN training,
@@ -445,7 +441,8 @@ class Configurations(object):
                 "logistic": losses.g_logistic,
                 "least_square": partial(
                     losses.g_ls,
-                    fake_target=self.LOSS.lsgan_gen_fake_target,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
                 ),
                 "hinge": losses.g_hinge,
                 "wasserstein": losses.g_wasserstein,
@@ -459,8 +456,8 @@ class Configurations(object):
                 "logistic_joint": losses.g_vanilla_joint,
                 "least_square_joint": partial(
                     losses.g_ls_joint,
-                    real_target=self.LOSS.lsgan_gen_real_target,
-                    fake_target=self.LOSS.lsgan_gen_fake_target,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
                 ),
                 "wasserstein_joint": losses.g_wasserstein_joint,
                 "hinge_joint": losses.g_hinge_joint,
@@ -471,8 +468,8 @@ class Configurations(object):
                 "logistic": losses.d_logistic,
                 "least_square": partial(
                     losses.d_ls,
-                    real_target=self.LOSS.lsgan_disc_real_target,
-                    fake_target=self.LOSS.lsgan_disc_fake_target,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
                 ),
                 "hinge": losses.d_hinge,
                 "wasserstein": losses.d_wasserstein,
@@ -486,15 +483,15 @@ class Configurations(object):
                 "logistic_joint": losses.d_vanilla,
                 "least_square_joint": partial(
                     losses.d_ls,
-                    real_target=self.LOSS.lsgan_disc_real_target,
-                    fake_target=self.LOSS.lsgan_disc_fake_target,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
                 ),
                 "wasserstein_joint": losses.d_wasserstein,
                 "hinge_joint": losses.d_hinge,
             }
             
             loss = self.LOSS.adv_loss
-            if self.LOSS.relative_sample != 'N/A':
+            if self.LOSS.jointgan_object != 'N/A':
                 if self.MODEL.jointgan_arch == 'rgan':
                     loss += '_rgan'
                 elif self.MODEL.jointgan_arch == 'ragan':
@@ -704,15 +701,13 @@ class Configurations(object):
 
     def check_compatability(self):
         #write compatibility code
-        assert self.LOSS.relative_sample in ["N/A", "real", "fake", "same"]
+        assert self.LOSS.jointgan_object in ["N/A", "r", "f", "s", "r-f", "r-s", "f-s", "r-f-s"]
         assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan", "prob"]
-        assert self.LOSS.add_real in ["N/A", "add_object", "add_sample", "intpol_sample"]
         assert self.MODEL.rsam_update in ["N/A", "step_fixed", "moving_avg"]
 
-        if self.LOSS.relative_sample == 'N/A' or self.LOSS.relative_sample == 'real':
-            assert self.LOSS.add_real == "N/A", "add_real can't be used if it is not jointgan or relative sample is already real."
-            assert self.MODEL.rsam_update == "N/A", "rsam_update can't be used if it is not jointgan or relative sample is already real."
-        
+        if self.LOSS.jointgan_object == 'N/A' or self.LOSS.jointgan_object == 'r':
+            assert self.MODEL.rsam_update == "N/A", "rsam_update cannot be used if there is not fake or same object"
+    
         if self.RUN.distributed_data_parallel and self.RUN.mixed_precision:
             print("-"*120)
             print("Please use standing statistics (-std_stat) with -std_max and -std_step options for reliable evaluation!")

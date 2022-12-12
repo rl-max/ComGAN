@@ -198,8 +198,8 @@ def enable_allreduce(dict_):
 ###########################################
 # <new> losses for relativistic training. #
 ###########################################
-def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_to_real=False):
-    fake_label = 0.5 if align_to_real else 1.0
+def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, center_label=False):
+    fake_label = 0.5 if center_label else 1.0
     logit = d_logit_fake - d_logit_real
     g_loss = BCE_loss(logit, fake_label * torch.ones_like(logit))
     return g_loss
@@ -211,9 +211,9 @@ def d_vanilla_rgan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     return d_loss
 
 
-def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, center_label=False):
     # label=0 for first term, label=1 for second term.
-    fake_label = 0.5 if align_to_real else 1.0
+    fake_label = 0.5 if center_label else 1.0
     r_logit = d_logit_real - torch.mean(d_logit_fake)
     f_logit = d_logit_fake - torch.mean(d_logit_real)
     g_loss = BCE_loss(f_logit, fake_label * torch.ones_like(f_logit)) + \
@@ -230,8 +230,8 @@ def d_vanilla_ragan(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     return d_loss
 
 
-def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
-    fake_label = 0.5 if align_to_real else 1.0
+def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, center_label=False):
+    fake_label = 0.5 if center_label else 1.0
     g_loss = BCE_loss(d_logit_fake, fake_label * torch.ones_like(d_logit_real)) + \
              BCE_loss(d_logit_real, (1- fake_label) * torch.ones_like(d_logit_real))
     return g_loss
@@ -243,31 +243,31 @@ def d_logistic_prob(d_logit_real, d_logit_fake, DDP, mixup_alpha = 1.0):
     return d_loss.mean()
 
 
-def g_logistic_prob(d_logit_real, d_logit_fake, DDP, align_to_real=False):
-    fake_label = 0.5 if align_to_real else 1.0
+def g_logistic_prob(d_logit_real, d_logit_fake, DDP, center_label=False):
+    fake_label = 0.5 if center_label else 1.0
     prob = F.softplus(d_logit_fake) / (F.softplus(d_logit_fake) + F.softplus(d_logit_real))
     g_loss = fake_label * -torch.log(prob + 1e-10) + (1 - fake_label) * -torch.log(1 - prob + 1e-10)
     return g_loss.mean()
 
 
-def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=0, fake_target=1, align_to_real=False):
+def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, center_label=False):
     center = (real_target + fake_target) / 2
-    real_target = center if align_to_real else real_target
-    fake_target = center if align_to_real else fake_target
-    g_loss = (d_logit_real - real_target) ** 2 + (d_logit_fake - fake_target) ** 2
+    real_target = center if center_label else real_target
+    fake_target = center if center_label else fake_target
+    g_loss = (d_logit_real - fake_target) ** 2 + (d_logit_fake - real_target) ** 2
     return g_loss.mean()
 
 
-def g_hinge_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+def g_hinge_joint(d_logit_real, d_logit_fake, DDP, center_label=False):
     g_loss = d_logit_real - d_logit_fake
-    if align_to_real:
+    if center_label:
         g_loss = F.relu(g_loss)
     return g_loss.mean()
 
 
-def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, align_to_real=False):
+def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, center_label=False):
     g_loss = d_logit_real - d_logit_fake
-    if align_to_real:
+    if center_label:
         g_loss = F.relu(g_loss)
     return g_loss.mean()
 
@@ -303,8 +303,8 @@ def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, mixup_al
     return d_loss.mean()
 
 
-def g_ls(d_logit_fake, DDP, fake_target=1):
-    g_loss = (d_logit_fake - fake_target)**2
+def g_ls(d_logit_fake, DDP, real_target=1, fake_target=0):
+    g_loss = (d_logit_fake - real_target)**2
     return g_loss.mean()
 
 
@@ -398,7 +398,7 @@ def cal_grad_penalty(real_images, real_labels, fake_images, discriminator, devic
     alpha = alpha.to(device)
 
     real_images = real_images.to(device)
-    interpolates = alpha * real_images + ((1 - alpha) * fake_images)
+    interpolates = alpha * real_images + (1 - alpha) * fake_images
     interpolates = interpolates.to(device)
     interpolates = autograd.Variable(interpolates, requires_grad=True)
     fake_dict = discriminator(interpolates, real_labels, eval=False)

@@ -69,7 +69,7 @@ class WORKER(object):
         self.rGen = None
         self.use_rGen = (cfgs.MODEL.rsam_update != 'N/A')
         if self.use_rGen:
-            assert rGen != None, "rGen which is set to None cannot be used"
+            assert rGen != None, "rGen to be used should not be None"
             self.rGen = rGen
 
         self.Gen_mapping = Gen_mapping
@@ -110,9 +110,9 @@ class WORKER(object):
         self.RUN = cfgs.RUN
         self.MISC = cfgs.MISC
         self.is_stylegan = cfgs.MODEL.backbone in ["stylegan2", "stylegan3"]
-        self.is_jointgan = cfgs.LOSS.relative_sample != "N/A"
+        self.is_jointgan = cfgs.LOSS.jointgan_object != "N/A"
         self.is_rgan = self.is_jointgan and (cfgs.MODEL.jointgan_arch == "rgan" or cfgs.MODEL.jointgan_arch == "ragan")
-        self.is_input_concat = self.is_jointgan and not self.is_rgan
+        self.input_concat = self.is_jointgan and not self.is_rgan
         self.effective_batch_size = self.OPTIMIZATION.batch_size * self.OPTIMIZATION.acml_steps
         self.blur_init_sigma = self.STYLEGAN.blur_init_sigma
         self.blur_fade_kimg = self.effective_batch_size * 200/32
@@ -196,11 +196,12 @@ class WORKER(object):
                        name=self.run_name,
                        dir=self.RUN.save_dir,
                        resume=self.best_step > 0 and resume)
+            wandb.config.jointgan_object = self.LOSS.jointgan_object
             wandb.config.jointgan_arch = self.MODEL.jointgan_arch
-            wandb.config.add_real = self.LOSS.add_real
             wandb.config.rsam_update = self.MODEL.rsam_update
             wandb.config.mixup = self.LOSS.mixup
-            wandb.config.align_to_real = self.LOSS.align_to_real
+            wandb.config.real_center = self.LOSS.real_center
+            wandb.config.fake_center = self.LOSS.fake_center
 
         self.start_time = datetime.now()
 
@@ -287,27 +288,27 @@ class WORKER(object):
                     if self.AUG.apply_apa:
                         real_images = apa_aug.apply_apa_aug(real_images, fake_images.detach(), self.aa_p, self.local_rank)
 
-                    aug_real_images = self.AUG.series_augment(real_images)
-                    aug_fake_images = self.AUG.series_augment(fake_images)
+                    real_images_ = self.AUG.series_augment(real_images)
+                    fake_images_ = self.AUG.series_augment(fake_images)
             
-                    if self.is_input_concat:
-                        aug_real_images, aug_fake_images = self.concat(aug_real_images, aug_fake_images)
+                    if self.input_concat:
+                        real_images_, fake_images_ = self.concat(real_images_, fake_images_)
                         real_images, fake_images = self.concat(real_images, fake_images)
                     
                     alpha = 1.0
                     if self.LOSS.mixup:
-                        batch_size, c, h, w = aug_real_images.shape
+                        batch_size, c, h, w = real_images_.shape
                         alpha = self.beta.sample((batch_size, 1))
-                        alpha = alpha.expand(batch_size, aug_real_images.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
+                        alpha = alpha.expand(batch_size, real_images_.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
                         alpha = alpha.to(self.local_rank)
-                        real_images_ = alpha * aug_real_images + (1 - alpha) * aug_fake_images
-                        fake_images_ = (1 - alpha) * aug_real_images + alpha * aug_fake_images
+                        mixed1 = alpha * real_images_ + (1 - alpha) * fake_images_
+                        mixed2 = (1 - alpha) * real_images_ + alpha * fake_images_
                         alpha = alpha.view(batch_size, 1)
-                        real_dict_train = self.Dis(real_images_, real_labels)
-                        fake_dict_train= self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
+                        real_dict_train = self.Dis(mixed1, real_labels)
+                        fake_dict_train= self.Dis(mixed2, fake_labels, adc_fake=self.adc_fake)
                     
-                    real_dict = self.Dis(aug_real_images, real_labels)
-                    fake_dict = self.Dis(aug_fake_images, fake_labels, adc_fake=self.adc_fake)
+                    real_dict = self.Dis(real_images_, real_labels)
+                    fake_dict = self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
                     if not self.LOSS.mixup:
                         real_dict_train, fake_dict_train = real_dict, fake_dict
 
@@ -566,29 +567,21 @@ class WORKER(object):
             for acml_step in range(self.OPTIMIZATION.acml_steps):
                 with torch.cuda.amp.autocast() if self.RUN.mixed_precision and not self.is_stylegan else misc.dummy_context_mgr() as mpc:
                     fake_images, fake_labels, zs, fake_images_eps, zs_eps, trsp_cost, ws, info_discrete_c, info_conti_c = generate_images(generator=self.Gen)
-                    
-                    use_real = False
-                    if self.LOSS.add_real == 'add_sample':
-                        use_real = True if random.random() > 0.5 else False
-
-                    real_images, ref_images = None, None
-                    need_real = (self.LOSS.relative_sample == 'real' or 
-                                 self.LOSS.add_real in ['add_object', 'intpol_sample'] or use_real)
-                    
-                    if need_real:
+                
+                    r_images, f_images, s_images = None, None, None
+                    if 'r' in self.LOSS.jointgan_object:
                         real_image_basket, real_label_basket = self.sample_data_basket()
-                        real_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
-                        real_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
-                    if self.LOSS.relative_sample == 'fake' and not use_real:
+                        r_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
+                    if 'f' in self.LOSS.jointgan_object:
                         if self.use_rGen:
-                            ref_images, ref_labels, _, ref_images_eps, _, _, _, _, _ = generate_images(generator=self.rGen)
+                            f_images, _, _, _, _, _, _, _, _ = generate_images(generator=self.rGen)
                         else:
-                            ref_images, ref_labels, _, ref_images_eps, _, _, _, _, _ = generate_images(generator=self.Gen)
-                    if self.LOSS.relative_sample == 'same' and not use_real:
+                            f_images, _, _, _, _, _, _, _, _ = generate_images(generator=self.Gen)
+                    if 's' in self.LOSS.jointgan_object:
                         if self.use_rGen:
-                            ref_images, ref_labels, _, ref_images_eps, _, _, _, _, _ = generate_images(generator=self.rGen, z_sampeld=zs)
+                            s_images, s_labels, _, s_images_eps, _, _, _, _, _ = generate_images(generator=self.rGen, z_sampeld=zs)
                         else:
-                            ref_images = fake_images.clone()
+                            s_images = fake_images.clone()
 
                     # blur images for stylegan3-r
                     if self.MODEL.backbone == "stylegan3" and self.STYLEGAN.stylegan3_cfg == "stylegan3-r" and self.blur_init_sigma != "N/A":
@@ -597,50 +590,50 @@ class WORKER(object):
                         if blur_size > 0:
                             f = torch.arange(-blur_size, blur_size + 1, device=fake_images.device).div(blur_sigma).square().neg().exp2()
                             fake_images = upfirdn2d.filter2d(fake_images, f / f.sum())
-                            if real_images != None:
-                                real_images = upfirdn2d.filter2d(real_images, f / f.sum())
-                            if ref_images != None:
-                                ref_images = upfirdn2d.filter2d(ref_images, f / f.sum())
+                            if r_images != None:
+                                r_images = upfirdn2d.filter2d(r_images, f / f.sum())
+                            if f_images != None:
+                                f_images = upfirdn2d.filter2d(f_images, f / f.sum())
+                            if s_images != None:
+                                s_images = upfirdn2d.filter2d(s_images, f / f.sum())
 
                     fake_images_ = self.AUG.series_augment(fake_images)
-                    if real_images != None:
-                        real_images_ = self.AUG.series_augment(real_images)
-                    if ref_images != None:
-                        ref_images_ = self.AUG.series_augment(ref_images)
+                    if r_images != None:
+                        r_images_ = self.AUG.series_augment(r_images)
+                    if f_images != None:
+                        f_images_ = self.AUG.series_augment(f_images)
+                    if s_images != None:
+                        s_images_ = self.AUG.series_augment(s_images)
 
-                    if self.LOSS.add_real == 'intpol_sample':
-                        batch_size, c, h, w = real_images_.shape
-                        alpha = self.uniform.sample((batch_size, 1))
-                        alpha = alpha.expand(batch_size, real_images_.nelement() // batch_size).contiguous().view(batch_size, c, h, w)
-                        alpha = alpha.to(self.local_rank)
-                        ref_images_ = alpha * real_images_ + (1 - alpha) * ref_images_
-
-                    if self.is_input_concat:
-                        if self.LOSS.add_real == 'add_object':
-                            add_real_images_, add_fake_images_ = self.concat(real_images_, fake_images_)
-                        if ref_images != None:
-                            real_images_ = ref_images_
-                            real_images = ref_images
-                        if fake_images_eps != None:
-                            fake_images_eps = torch.cat([fake_images_eps, real_images], dim=1)
-                        real_images_, fake_images_ = self.concat(real_images_, fake_images_)
-                        real_images, fake_images = self.concat(real_images, fake_images)
-                    elif self.is_rgan:
-                        if self.LOSS.add_real == 'add_object':
-                            add_real_images_, add_fake_images_ = real_images_, fake_images_
-                        if ref_images != None:
-                            real_images_ = ref_images_
-                            real_images = ref_images
-
-                    # DISCRIMINATOR FORWARD
-                    if self.is_jointgan:
-                        real_dict = self.Dis(real_images_)
-                        fake_dict = self.Dis(fake_images_)
-                        if self.LOSS.add_real == 'add_object':
-                            add_real_dict = self.Dis(add_real_images_)
-                            add_fake_dict = self.Dis(add_fake_images_)
-                    else:
-                        fake_dict = self.Dis(fake_images_, fake_labels)
+                    if self.LOSS.jointgan_object == 'N/A':
+                        fake_data_ = fake_images_
+                        fake_data = fake_images
+                        fake_dict = self.Dis(fake_data_)
+                    if 'r' in self.LOSS.jointgan_object:
+                        if self.input_concat:
+                            real_data_, fake_data_ = self.concat(r_images_, fake_images_)
+                            real_data, fake_data = self.concat(r_images, fake_images)
+                            fake_data_eps = torch.cat([fake_images_eps, r_images], dim=1)
+                        else:
+                            real_data_, fake_data_ = r_images_, fake_images_
+                            real_data, fake_data = r_images, fake_images
+                            fake_data_eps = fake_images_eps
+                        real_dict = self.Dis(real_data_)
+                        fake_dict = self.Dis(fake_data_)
+                    if 'f' in self.LOSS.jointgan_object:
+                        if self.input_concat:
+                            real_data_f, fake_data_f = self.concat(f_images_, fake_images_)
+                        else:
+                            real_data_f, fake_data_f = f_images_, fake_images_
+                        real_dict_f = self.Dis(real_data_f)
+                        fake_dict_f = self.Dis(fake_data_f)
+                    if 's' in self.LOSS.jointgan_object:
+                        if self.input_concat:
+                            real_data_s, fake_data_s = self.concat(s_images_, fake_images_)
+                        else:
+                            real_data_s, fake_data_s = s_images_, fake_images_
+                        real_dict_s = self.Dis(real_data_s)
+                        fake_dict_s = self.Dis(fake_data_s)
 
                     # accumulate discriminator output informations for logging
                     if self.AUG.apply_ada or self.AUG.apply_apa:
@@ -655,24 +648,28 @@ class WORKER(object):
                     if self.LOSS.apply_topk:
                         fake_dict["adv_output"] = torch.topk(fake_dict["adv_output"], int(self.topk)).values
 
-                    # calculate adversarial loss defined by "LOSS.adv_loss"
-                    if self.LOSS.adv_loss == "MH":
-                        gen_acml_loss = self.LOSS.mh_lambda * self.LOSS.g_loss(DDP=self.DDP, **fake_dict, )
                     # <new> compute loss for real image provided fake image as reference
-                    elif self.is_jointgan:
-                        align_to_real = self.LOSS.align_to_real if self.LOSS.relative_sample == 'real' or use_real else False
-                        gen_acml_loss = self.LOSS.g_loss(d_logit_fake=fake_dict["adv_output"],
-                                                         d_logit_real=real_dict["adv_output"], 
-                                                         align_to_real = align_to_real,
-                                                         DDP=self.DDP)
-                        if self.LOSS.add_real == 'add_object':
-                            gen_acml_loss += self.LOSS.g_loss(d_logit_fake=add_fake_dict["adv_output"],
-                                                              d_logit_real=add_real_dict["adv_output"], 
-                                                              align_to_real = self.LOSS.align_to_real,
-                                                              DDP=self.DDP)
-                    else:
-                        gen_acml_loss = self.LOSS.g_loss(fake_dict["adv_output"], DDP=self.DDP)
-
+                    gen_acml_loss = 0
+                    if 'r' in self.LOSS.jointgan_object:
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict["adv_output"],
+                                                          d_logit_real = real_dict["adv_output"], 
+                                                          center_label = self.real_center,
+                                                          DDP=self.DDP)
+                    if 'f' in self.LOSS.jointgan_object:
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_f["adv_output"],
+                                                          d_logit_real = real_dict_f["adv_output"], 
+                                                          center_label = self.fake_center,
+                                                          DDP=self.DDP)
+                    if 's' in self.LOSS.jointgan_object:
+                        gen_acml_loss += self.LOSS.g_loss(d_logit_fake = fake_dict_s["adv_output"],
+                                                          d_logit_real = real_dict_s["adv_output"], 
+                                                          center_label = False,
+                                                          DDP=self.DDP)
+                    if self.LOSS.jointgan_object == 'N/A':
+                        if self.LOSS.adv_loss == "MH":
+                            gen_acml_loss = self.LOSS.mh_lambda * self.LOSS.g_loss(DDP=self.DDP, **fake_dict)
+                        else:
+                            gen_acml_loss = self.LOSS.g_loss(fake_dict["adv_output"], DDP=self.DDP)
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
                     if self.MODEL.d_cond_mtd in self.MISC.classifier_based_GAN:
