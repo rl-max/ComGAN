@@ -617,7 +617,7 @@ class WORKER(object):
                         if self.input_concat:
                             real_data_, fake_data_ = self.concat(r_images_, fake_images_)
                             real_data, fake_data = self.concat(r_images, fake_images)
-                            fake_data_eps = torch.cat([fake_images_eps, r_images], dim=1)
+                            fake_data_eps = torch.cat([fake_images_eps, r_images], dim=1) if fake_images_eps != None else None
                         else:
                             real_data_, fake_data_ = r_images_, fake_images_
                             real_data, fake_data = r_images, fake_images
