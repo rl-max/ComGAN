@@ -337,6 +337,7 @@ class WORKER(object):
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
                     if self.MODEL.d_cond_mtd in self.MISC.classifier_based_GAN:
+                        assert not self.is_jointgan
                         real_cond_loss = self.cond_loss(**real_dict)
                         dis_acml_loss += self.LOSS.cond_lambda * real_cond_loss
                         if self.MODEL.aux_cls_type == "TAC":
@@ -356,6 +357,7 @@ class WORKER(object):
 
                     # if LOSS.apply_cr is True, force the adv. and cls. logits to be the same
                     if self.LOSS.apply_cr:
+                        assert not self.is_jointgan
                         real_prl_images = self.AUG.parallel_augment(real_images)
                         real_prl_dict = self.Dis(real_prl_images, real_labels)
                         real_consist_loss = self.l2_loss(real_dict["adv_output"], real_prl_dict["adv_output"])
@@ -369,6 +371,7 @@ class WORKER(object):
 
                     # if LOSS.apply_bcr is True, apply balanced consistency regularization proposed in ICRGAN
                     if self.LOSS.apply_bcr:
+                        assert not self.is_jointgan
                         real_prl_images = self.AUG.parallel_augment(real_images)
                         fake_prl_images = self.AUG.parallel_augment(fake_images)
                         real_prl_dict = self.Dis(real_prl_images, real_labels)
@@ -387,6 +390,7 @@ class WORKER(object):
 
                     # if LOSS.apply_zcr is True, apply latent consistency regularization proposed in ICRGAN
                     if self.LOSS.apply_zcr:
+                        assert not self.is_jointgan
                         fake_eps_dict = self.Dis(fake_images_eps, fake_labels, adc_fake=self.adc_fake)
                         fake_zcr_loss = self.l2_loss(fake_dict["adv_output"], fake_eps_dict["adv_output"])
                         if self.MODEL.d_cond_mtd == "AC":
@@ -673,6 +677,7 @@ class WORKER(object):
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
                     if self.MODEL.d_cond_mtd in self.MISC.classifier_based_GAN:
+                        assert not self.is_jointgan
                         fake_cond_loss = self.cond_loss(**fake_dict)
                         gen_acml_loss += self.LOSS.cond_lambda * fake_cond_loss
                         if self.MODEL.aux_cls_type == "TAC":
@@ -686,6 +691,7 @@ class WORKER(object):
 
                     # apply feature matching regularization to stabilize adversarial dynamics
                     if self.LOSS.apply_fm:
+                        assert not self.is_jointgan
                         real_image_basket, real_label_basket = self.sample_data_basket()
                         real_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
                         real_labels = real_label_basket[0].to(self.local_rank, non_blocking=True)
@@ -697,15 +703,18 @@ class WORKER(object):
 
                     # add transport cost for latent optimization training
                     if self.LOSS.apply_lo:
+                        assert not self.is_jointgan
                         gen_acml_loss += self.LOSS.lo_lambda * trsp_cost
 
                     # apply latent consistency regularization for generating diverse images
                     if self.LOSS.apply_zcr:
+                        assert not self.is_jointgan
                         fake_zcr_loss = -1 * self.l2_loss(fake_images, fake_images_eps)
                         gen_acml_loss += self.LOSS.g_lambda * fake_zcr_loss
 
                     # compute infomation loss for InfoGAN
                     if self.MODEL.info_type in ["discrete", "both"]:
+                        assert not self.is_jointgan
                         dim = self.MODEL.info_dim_discrete_c
                         self.info_discrete_loss = 0.0
                         for info_c in range(self.MODEL.info_num_discrete_c):
@@ -714,6 +723,7 @@ class WORKER(object):
                                 info_discrete_c[:, info_c: info_c+1].squeeze())
                         gen_acml_loss += self.LOSS.infoGAN_loss_discrete_lambda*self.info_discrete_loss + misc.enable_allreduce(fake_dict)
                     if self.MODEL.info_type in ["continuous", "both"]:
+                        assert not self.is_jointgan
                         self.info_conti_loss = losses.normal_nll_loss(info_conti_c, fake_dict["info_conti_mu"], fake_dict["info_conti_var"])
                         gen_acml_loss += self.LOSS.infoGAN_loss_conti_lambda*self.info_conti_loss + misc.enable_allreduce(fake_dict)
 
@@ -743,6 +753,7 @@ class WORKER(object):
 
             # apply path length regularization
             if self.STYLEGAN.apply_pl_reg and (self.OPTIMIZATION.g_updates_per_step*current_step + step_index) % self.STYLEGAN.g_reg_interval == 0:
+                assert not self.is_jointgan
                 self.OPTIMIZATION.g_optimizer.zero_grad()
                 for acml_index in range(self.OPTIMIZATION.acml_steps):
                     fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = sample.generate_images(
