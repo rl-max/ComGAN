@@ -8,7 +8,7 @@ MODEL:
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "vanilla"
-  jointgan_object: "s"
+  jointgan_object: "r-f"
   real_center : False
   fake_center : False
 OPTIMIZATION:
