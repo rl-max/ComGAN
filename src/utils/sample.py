@@ -92,7 +92,7 @@ def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, 
                     stylegan_update_emas, cal_trsp_cost, z_sampled=None):
     
     trsp_cost, info_discrete_c, info_conti_c = None, None, None
-    zs_eps = None
+    zs_eps, fake_labels, fake_images_eps  = None, None, None
 
     if z_sampled == None:
         if is_train:
