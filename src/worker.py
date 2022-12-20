@@ -584,7 +584,7 @@ class WORKER(object):
                         f_images = f_images.detach()
                     if 's' in self.LOSS.jointgan_object:
                         if self.use_rGen:
-                            s_images, s_labels, _, s_images_eps, _, _, _, _, _ = generate_images(generator=self.rGen, z_sampeld=zs)
+                            s_images, s_labels, _, s_images_eps, _, _, _, _, _ = generate_images(generator=self.rGen, z_sampled=zs)
                         else:
                             s_images = fake_images.clone()
                         s_images = s_images.detach()
