@@ -4,11 +4,12 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "deep_conv"
+  rsam_update: "moving_avg"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "vanilla"
-  jointgan_object: "r-f-s"
+  jointgan_object: "s"
   real_center : False
   fake_center : False
 OPTIMIZATION:
