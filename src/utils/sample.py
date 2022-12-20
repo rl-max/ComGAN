@@ -163,7 +163,7 @@ def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, 
                                                    truncation_psi=truncation_factor,
                                                    truncation_cutoff=RUN.truncation_cutoff)
     else:
-        fake_images = generator(zs, fake_labels, eval=not is_train)
+        fake_images = generator(zs, eval=not is_train)
         ws = None
     
 
