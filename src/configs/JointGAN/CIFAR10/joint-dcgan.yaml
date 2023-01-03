@@ -3,7 +3,7 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
-  jointgan_arch: "rgan"
+  jointgan_arch: "ragan"
   backbone: "deep_conv"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
