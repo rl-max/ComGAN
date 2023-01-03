@@ -3,13 +3,12 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
-  jointgan_arch: "ragan"
   backbone: "deep_conv"
   g_conv_dim: "N/A"
   d_conv_dim: "N/A"
 LOSS:
-  adv_loss: "vanilla"
-  jointgan_object: "r"
+  adv_loss: "least_square"
+  jointgan_object: "N/A"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 400000
