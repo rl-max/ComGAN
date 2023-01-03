@@ -120,7 +120,7 @@ class Configurations(object):
         self.MODEL.info_num_conti_c = "N/A"
         # dimension of discrete c to use in InfoGAN (one-hot)
         self.MODEL.info_dim_discrete_c = "N/A"
-        # <new> jointgan architecture \in ["concat", "rgan", "ragan", "prob"]
+        # jointgan architecture \in ["concat", "rgan", "ragan", "prob"]
         self.MODEL.jointgan_arch = "concat"
         # way to update a model that generates relative samples \in ["N/A", "step_fixed" ,"moving_avg"]
         self.MODEL.rsam_update = "N/A"
