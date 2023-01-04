@@ -202,6 +202,7 @@ class WORKER(object):
             wandb.config.mixup = self.LOSS.mixup
             wandb.config.real_center = self.LOSS.real_center
             wandb.config.fake_center = self.LOSS.fake_center
+            wandb.config.adv_loss = self.LOSS.adv_loss
 
         self.start_time = datetime.now()
 
