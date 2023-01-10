@@ -303,7 +303,7 @@ def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, mixup_al
     return d_loss.mean()
 
 
-def g_ls(d_logit_fake, DDP, real_target=1, fake_target=0):
+def g_ls(d_logit_fake, DDP, real_target=1):
     g_loss = (d_logit_fake - real_target)**2
     return g_loss.mean()
 
