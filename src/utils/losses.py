@@ -250,6 +250,36 @@ def g_logistic_prob(d_logit_real, d_logit_fake, DDP, center_label=False):
     return g_loss.mean()
 
 
+def d_ls_rgan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, mixup_alpha = 1.0):
+    d_loss = 2 * (d_logit_real - d_logit_fake - real_target) ** 2 
+    return d_loss.mean()
+
+
+def d_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, mixup_alpha = 1.0):
+    r_logit = d_logit_real - d_logit_fake.mean()
+    f_logit = d_logit_fake - d_logit_real.mean()
+    d_loss = (r_logit - real_target) ** 2 + (f_logit - fake_target) ** 2 
+    return d_loss.mean()
+
+
+def g_ls_rgan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, center_label=False):
+    center = (real_target + fake_target) / 2
+    real_target = center if center_label else real_target
+    fake_target = center if center_label else fake_target
+    g_loss = 2 * (d_logit_fake - d_logit_real - real_target) ** 2 
+    return g_loss.mean()
+
+
+def g_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, center_label=False):
+    center = (real_target + fake_target) / 2
+    real_target = center if center_label else real_target
+    fake_target = center if center_label else fake_target
+    r_logit = d_logit_real - d_logit_fake.mean()
+    f_logit = d_logit_fake - d_logit_real.mean()
+    g_loss = (f_logit - real_target) ** 2 + (r_logit - fake_target) ** 2
+    return g_loss.mean()
+
+
 def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, center_label=False):
     center = (real_target + fake_target) / 2
     real_target = center if center_label else real_target
