@@ -230,12 +230,8 @@ class Configurations(object):
         self.LOSS.jointgan_object = "N/A"  
         #whether to learn fake sample with respect to the median label (e.g 0.5) in case of real object (for G)
         self.LOSS.real_center = False
-        #whether to learn fake sample with respect to the median label (e.g 0.5) in case of fake object (for G)
-        self.LOSS.fake_center = False
-        # whether to apply mixup when training the discriminator
-        self.LOSS.mixup = False 
-        # alpha value in Beta distribution in mixup
-        self.LOSS.alpha = 0.2
+        #whether to neutralize the output in the cases of (real, real), (fake, fake) pairs in jointgan
+        self.LOSS.align_center = False
         # <new> use custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = 0
