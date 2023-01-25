@@ -118,7 +118,6 @@ class WORKER(object):
         self.blur_fade_kimg = self.effective_batch_size * 200/32
         self.DDP = self.RUN.distributed_data_parallel
         self.adc_fake = False
-        self.beta = distribution.beta.Beta(self.LOSS.alpha, self.LOSS.alpha)
         self.uniform = distribution.uniform.Uniform(0.0, 1.0)
 
         num_classes = self.DATA.num_classes
