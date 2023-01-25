@@ -278,6 +278,7 @@ class WORKER(object):
                     if self.LOSS.align_same:
                         real_images2 = real_image_basket[batch_counter + 1].to(self.local_rank, non_blocking=True)
                         fake_images2, _, _, _, _, _, _, _, _ = generate_images(generator=self.Gen)
+                        print('batch_counter:', batch_counter)
 
                     # blur images for stylegan3-r
                     if self.MODEL.backbone == "stylegan3" and self.STYLEGAN.stylegan3_cfg == "stylegan3-r" and self.blur_init_sigma != "N/A":
