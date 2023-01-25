@@ -231,7 +231,7 @@ class Configurations(object):
         #whether to learn fake sample with respect to the median label (e.g 0.5) in case of real object (for G)
         self.LOSS.real_center = False
         #whether to neutralize the output in the cases of (real, real), (fake, fake) pairs in jointgan
-        self.LOSS.align_center = False
+        self.LOSS.align_same = False
         # <new> use custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = 0
