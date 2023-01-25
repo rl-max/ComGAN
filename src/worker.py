@@ -203,6 +203,8 @@ class WORKER(object):
             wandb.config.real_center = self.LOSS.real_center
             wandb.config.fake_center = self.LOSS.fake_center
             wandb.config.adv_loss = self.LOSS.adv_loss
+            wandb.config.lsgan_real_target = self.LOSS.lsgan_real_target
+            wandb.config.lsgan_fake_target = self.LOSS.lsgan_fake_target
 
         self.start_time = datetime.now()
 
