@@ -266,6 +266,7 @@ class WORKER(object):
         if self.DDP*self.RUN.mixed_precision*self.RUN.synchronized_bn == 0: self.Gen.apply(misc.untrack_bn_statistics)
         # sample real images and labels from the true data distribution
         real_image_basket, real_label_basket = self.sample_data_basket()
+
         for step_index in range(self.OPTIMIZATION.d_updates_per_step):
             self.OPTIMIZATION.d_optimizer.zero_grad()
             for acml_index in range(self.OPTIMIZATION.acml_steps):
@@ -275,7 +276,6 @@ class WORKER(object):
                     real_labels = real_label_basket[batch_counter].to(self.local_rank, non_blocking=True)
                     # sample fake images and labels from p(G(z), y)
                     fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = generate_images(generator=self.Gen)
-                    print('batch_counter:', batch_counter)
                     if self.LOSS.align_same:
                         real_images2 = real_image_basket[batch_counter + 1].to(self.local_rank, non_blocking=True)
                         fake_images2, _, _, _, _, _, _, _, _ = generate_images(generator=self.Gen)
@@ -473,7 +473,10 @@ class WORKER(object):
 
                     # adjust gradients for applying gradient accumluation trick
                     dis_acml_loss = dis_acml_loss / self.OPTIMIZATION.acml_steps
-                    batch_counter += 1
+                    if self.LOSS.align_same:
+                        batch_counter += 2
+                    else:
+                        batch_counter += 1
 
                 # accumulate gradients of the discriminator
                 if self.RUN.mixed_precision and not self.is_stylegan:

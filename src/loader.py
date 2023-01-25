@@ -179,7 +179,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     cfgs.OPTIMIZATION.basket_size = cfgs.OPTIMIZATION.batch_size*\
                                     cfgs.OPTIMIZATION.acml_steps*\
                                     cfgs.OPTIMIZATION.d_updates_per_step
-
+    if cfgs.LOSS.align_same:
+        cfgs.OPTIMIZATION.basket_size *= 2
     # -----------------------------------------------------------------------------
     # define dataloaders for train and evaluation.
     # -----------------------------------------------------------------------------
