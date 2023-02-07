@@ -1,0 +1,12 @@
+DATA:
+  name: "CelebA"
+  img_size: 64
+  num_classes: 1
+MODEL:
+  backbone: "resnet"
+  jointgan_arch: "concat"
+LOSS:
+  adv_loss: "wasserstein"
+  jointgan_arch: "r"
+  apply_gp: True
+  gp_lambda: 10.0

@@ -42,7 +42,7 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.DATA = misc.make_empty_object()
 
-        # dataset name \in ["CIFAR10", "CIFAR100", "Tiny_ImageNet", "CUB200", "ImageNet", "MY_DATASET"]
+        # dataset name \in ["CIFAR10", "CIFAR100", "Tiny_ImageNet", "CUB200", "ImageNet", "CelebA", "MY_DATASET"]
         self.DATA.name = "CIFAR10"
         # image size for training
         self.DATA.img_size = 32
@@ -817,7 +817,7 @@ class Configurations(object):
         if self.OPTIMIZATION.world_size > 1 and self.RUN.synchronized_bn:
             assert not self.RUN.batch_statistics, "batch_statistics cannot be used with synchronized_bn."
 
-        if self.DATA.name in ["CIFAR10", "CIFAR100"]:
+        if self.DATA.name in ["CIFAR10", "CIFAR100", "CelebA"]:
             assert self.RUN.ref_dataset in ["train", "test"], "There is no data for validation."
 
         if self.RUN.interpolation:

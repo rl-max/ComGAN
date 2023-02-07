@@ -155,7 +155,7 @@ class ResNet(nn.Module):
             x = x.view(x.size(0), -1)
             x = self.fc(x)
 
-        elif self.dataset == "ImageNet" or self.dataset == "Tiny_ImageNet":
+        elif self.dataset == "ImageNet" or self.dataset == "Tiny_ImageNet" or self.dataset=="CelebA":
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
