@@ -140,8 +140,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
 
     if  load_eval_dataset:
         if local_rank == 0:
-            logger.info("Load {name} {ref} dataset with {num_data} data for evaluation.".format(
-                        name=cfgs.DATA.name, ref=cfgs.RUN.ref_dataset, num_data=cfgs.RUN.num_eval_data))
+            logger.info("Load {name} {ref} dataset for evaluation.".format(name=cfgs.DATA.name, ref=cfgs.RUN.ref_dataset))
         eval_dataset = Dataset_(data_name=cfgs.DATA.name,
                                 data_dir=cfgs.RUN.data_dir,
                                 train=True if cfgs.RUN.ref_dataset == "train" else False,

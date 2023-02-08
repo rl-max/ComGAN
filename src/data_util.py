@@ -119,6 +119,7 @@ class Dataset_(Dataset):
         else:
             mode = "train" if self.train == True else "valid"
             root = os.path.join(self.data_dir, mode)
+            print(root)
             self.data = ImageFolder(root=root)
 
     def _get_hdf5(self, index):
