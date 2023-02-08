@@ -225,7 +225,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                            RUN=cfgs.RUN,
                                            device=local_rank,
                                            logger=logger)
-    rGen = copy.deepcopy(Gen)
 
     if local_rank != 0:
         custom_ops.verbosity = "none"
@@ -387,7 +386,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
         num_eval=num_eval,
         loss_list_dict=loss_list_dict,
         metric_dict_during_train=metric_dict_during_train,
-        rGen=rGen
     )
 
     # -----------------------------------------------------------------------------

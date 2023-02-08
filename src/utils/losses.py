@@ -195,9 +195,32 @@ def enable_allreduce(dict_):
             loss += value.mean()*0
     return loss
 
-###########################################
-# <new> losses for relativistic training. #
-###########################################
+
+#stdgan
+def d_vanilla(d_logit_real, d_logit_fake, DDP, align_center=False):
+    alpha = 0.5 if align_center else 1.0
+    d_loss = BCE_loss(d_logit_real, alpha * torch.ones_like(d_logit_real)) + \
+             BCE_loss(d_logit_fake, (1 - alpha) * torch.ones_like(d_logit_real))
+    return d_loss
+
+def g_vanilla(d_logit_fake, DDP):
+    g_loss = BCE_loss(d_logit_fake, torch.ones_like(d_logit_fake))
+    return g_loss
+
+def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_center=False):
+    alpha = 0.5 if align_center else 1.0
+    g_loss = BCE_loss(d_logit_fake, alpha * torch.ones_like(d_logit_real)) + \
+             BCE_loss(d_logit_real, (1- alpha) * torch.ones_like(d_logit_real))
+    return g_loss
+
+
+#stdrgan
+def d_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_center=False):
+    logit = d_logit_real - d_logit_fake
+    alpha = 0.5 if align_center else 1.0
+    d_loss = BCE_loss(logit, alpha * torch.ones_like(logit))
+    return d_loss
+
 def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_center=False):
     alpha = 0.5 if align_center else 1.0
     logit = d_logit_fake - d_logit_real
@@ -205,12 +228,15 @@ def g_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_center=False):
     return g_loss
 
 
-def d_vanilla_rgan(d_logit_real, d_logit_fake, DDP, align_center=False):
-    logit = d_logit_real - d_logit_fake
+#stdragan
+def d_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_center=False):
+    # label=1 for first term, label=0 for second term.
+    r_logit = d_logit_real - torch.mean(d_logit_fake)
+    f_logit = d_logit_fake - torch.mean(d_logit_real)
     alpha = 0.5 if align_center else 1.0
-    d_loss = BCE_loss(logit, alpha * torch.ones_like(logit))
+    d_loss = BCE_loss(r_logit, alpha * torch.ones_like(r_logit)) + \
+             BCE_loss(f_logit, (1 - alpha) * torch.ones_like(f_logit))
     return d_loss
-
 
 def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_center=False):
     # label=0 for first term, label=1 for second term.
@@ -222,44 +248,41 @@ def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_center=False):
     return g_loss
 
 
-def d_vanilla_ragan(d_logit_real, d_logit_fake, DDP, align_center=False):
-    # label=1 for first term, label=0 for second term.
-    r_logit = d_logit_real - torch.mean(d_logit_fake)
-    f_logit = d_logit_fake - torch.mean(d_logit_real)
-    alpha = 0.5 if align_center else 1.0
-    d_loss = BCE_loss(r_logit, alpha * torch.ones_like(r_logit)) + \
-             BCE_loss(f_logit, (1 - alpha) * torch.ones_like(f_logit))
-    return d_loss
+#lsgan
+def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, align_center=False):
+    center_label = (real_target + fake_target) / 2
+    real_target = center_label if align_center else real_target
+    fake_target = center_label if align_center else fake_target
+    d_loss = (d_logit_real - real_target) ** 2 + (d_logit_fake - fake_target) ** 2
+    return d_loss.mean()
+
+def g_ls(d_logit_fake, DDP, real_target=1):
+    g_loss = (d_logit_fake - real_target)**2
+    return g_loss.mean()
+
+def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, align_center=False):
+    center_label = (real_target + fake_target) / 2
+    real_target = center_label if align_center else real_target
+    fake_target = center_label if align_center else fake_target
+    g_loss = (d_logit_real - fake_target) ** 2 + (d_logit_fake - real_target) ** 2
+    return g_loss.mean()
 
 
-def g_vanilla_joint(d_logit_real, d_logit_fake, DDP, align_center=False):
-    alpha = 0.5 if align_center else 1.0
-    g_loss = BCE_loss(d_logit_fake, alpha * torch.ones_like(d_logit_real)) + \
-             BCE_loss(d_logit_real, (1- alpha) * torch.ones_like(d_logit_real))
-    return g_loss
-
-
-def d_logistic_prob(d_logit_real, d_logit_fake, DDP, align_center=False):
-    prob = F.softplus(d_logit_real) / (F.softplus(d_logit_real) + F.softplus(d_logit_fake)) 
-    alpha = 0.5 if align_center else 1.0
-    d_loss = alpha * -torch.log(prob + 1e-10) + (1 - alpha) * -torch.log(1 - prob + 1e10)
-    return 2 * d_loss.mean()
-
-
-def g_logistic_prob(d_logit_real, d_logit_fake, DDP, align_center=False):
-    alpha = 0.5 if align_center else 1.0
-    prob = F.softplus(d_logit_fake) / (F.softplus(d_logit_fake) + F.softplus(d_logit_real))
-    g_loss = alpha * -torch.log(prob + 1e-10) + (1 - alpha) * -torch.log(1 - prob + 1e-10)
-    return 2 * g_loss.mean()
-
-
+#lsrgan
 def d_ls_rgan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, align_center=False):
     center_label = (real_target + fake_target) / 2
     real_target = center_label if align_center else real_target
     d_loss = (d_logit_real - d_logit_fake - real_target) ** 2
     return 2 * d_loss.mean()
 
+def g_ls_rgan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, align_center=False):
+    center_label = (real_target + fake_target) / 2
+    real_target = center_label if align_center else real_target
+    g_loss = 2 * (d_logit_fake - d_logit_real - real_target) ** 2 
+    return g_loss.mean()
 
+
+#lsragan
 def d_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, align_center=False):
     r_logit = d_logit_real - d_logit_fake.mean()
     f_logit = d_logit_fake - d_logit_real.mean()
@@ -268,14 +291,6 @@ def d_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, a
     fake_target = center_label if align_center else fake_target
     d_loss = (r_logit - real_target) ** 2 + (f_logit - fake_target) ** 2 
     return d_loss.mean()
-
-
-def g_ls_rgan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, align_center=False):
-    center_label = (real_target + fake_target) / 2
-    real_target = center_label if align_center else real_target
-    g_loss = 2 * (d_logit_fake - d_logit_real - real_target) ** 2 
-    return g_loss.mean()
-
 
 def g_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, align_center=False):
     center_label = (real_target + fake_target) / 2
@@ -287,79 +302,54 @@ def g_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, a
     return g_loss.mean()
 
 
-def g_ls_joint(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, align_center=False):
-    center_label = (real_target + fake_target) / 2
-    real_target = center_label if align_center else real_target
-    fake_target = center_label if align_center else fake_target
-    g_loss = (d_logit_real - fake_target) ** 2 + (d_logit_fake - real_target) ** 2
-    return g_loss.mean()
+#hingegan
+def d_hinge(d_logit_real, d_logit_fake, DDP):
+    d_loss = F.relu(1. - d_logit_real) + F.relu(1. + d_logit_fake)
+    return d_loss.mean()
 
+def g_hinge(d_logit_fake, DDP):
+    g_loss = -d_logit_fake
+    return g_loss.mean()
 
 def g_hinge_joint(d_logit_real, d_logit_fake, DDP, align_center=False):
     g_loss = d_logit_real - d_logit_fake
     return g_loss.mean()
 
 
-def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, align_center=False):
-    g_loss = d_logit_real - d_logit_fake
-    return g_loss.mean()
-
-###########################################
-
-def d_vanilla(d_logit_real, d_logit_fake, DDP, align_center=False):
-    alpha = 0.5 if align_center else 1.0
-    d_loss = BCE_loss(d_logit_real, alpha * torch.ones_like(d_logit_real)) + \
-             BCE_loss(d_logit_fake, (1 - alpha) * torch.ones_like(d_logit_real))
-    return d_loss
-
-
-def g_vanilla(d_logit_fake, DDP):
-    g_loss = BCE_loss(d_logit_fake, torch.ones_like(d_logit_fake))
-    return g_loss
-
-
-def d_logistic(d_logit_real, d_logit_fake, DDP, align_center=False):
-    alpha = 0.5 if align_center else 1.0
-    d_loss = BCE_loss(d_logit_real, alpha * torch.ones_like(d_logit_real)) + \
-             BCE_loss(d_logit_fake, (1 - alpha) * torch.ones_like(d_logit_real))
-    return d_loss
-
-
-def g_logistic(d_logit_fake, DDP):
-    g_loss = BCE_loss(d_logit_fake, torch.ones_like(d_logit_fake))
-    return g_loss
-
-
-def d_ls(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=0, align_center=False):
-    center_label = (real_target + fake_target) / 2
-    real_target = center_label if align_center else real_target
-    fake_target = center_label if align_center else fake_target
-    d_loss = (d_logit_real - real_target) ** 2 + (d_logit_fake - fake_target) ** 2
+#hingergan
+def d_hinge_rgan(d_logit_real, d_logit_fake, DDP):
+    d_loss = 2 * F.relu(1. - d_logit_real + d_logit_fake)
     return d_loss.mean()
 
-
-def g_ls(d_logit_fake, DDP, real_target=1):
-    g_loss = (d_logit_fake - real_target)**2
+def g_hinge_rgan(d_logit_real, d_logit_fake, DDP):
+    g_loss = -d_logit_fake + d_logit_real
     return g_loss.mean()
 
 
-def d_hinge(d_logit_real, d_logit_fake, DDP):
+#hingeragan
+def d_hinge_ragan(d_logit_real, d_logit_fake, DDP):
+    d_logit_real = d_logit_real - d_logit_fake.mean()
+    d_logit_fake = d_logit_fake - d_logit_real.mean()
     d_loss = F.relu(1. - d_logit_real) + F.relu(1. + d_logit_fake)
     return d_loss.mean()
 
-
-def g_hinge(d_logit_fake, DDP):
+def g_hinge_ragan(d_logit_real, d_logit_fake, DDP):
+    d_logit_fake = d_logit_fake - d_logit_real.mean()
     g_loss = -d_logit_fake
     return g_loss.mean()
 
 
+#wassersteingan
 def d_wasserstein(d_logit_real, d_logit_fake, DDP):
     d_loss = d_logit_fake - d_logit_real
     return d_loss.mean()
 
-
 def g_wasserstein(d_logit_fake, DDP):
     g_loss = -d_logit_fake
+    return g_loss.mean()
+
+def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP, align_center=False):
+    g_loss = d_logit_real - d_logit_fake
     return g_loss.mean()
 
 

@@ -1,11 +1,14 @@
+# standard dcgan!
 DATA:
   name: "CelebA"
   img_size: 64
   num_classes: 1
 MODEL:
   backbone: "resnet"
+  jointgan_arch: "concat"
 LOSS:
-  adv_loss: "least_square"
+  adv_loss: "hinge"
+  jointgan_object: "r"
 OPTIMIZATION:
   batch_size: 256
   beta1: 0.0
