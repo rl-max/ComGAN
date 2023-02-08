@@ -4,10 +4,8 @@ DATA:
   num_classes: 1
 MODEL:
   backbone: "resnet"
-  jointgan_arch: "concat"
 LOSS:
-  adv_loss: "vanilla"
-  jointgan_object: "r"
+  adv_loss: "least_square"
 OPTIMIZATION:
   batch_size: 256
   d_updates_per_step: 1
