@@ -8,8 +8,6 @@ MODEL:
 LOSS:
   adv_loss: "least_square"
   jointgan_object: "r"
-  lsgan_real_target: 1
-  lsgan_fake_target: -1
 OPTIMIZATION:
   batch_size: 256
   g_lr: 0.0001

@@ -234,7 +234,7 @@ class Configurations(object):
         self.LOSS.align_same = False
         # <new> use custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
-        self.LOSS.lsgan_fake_target = 0
+        self.LOSS.lsgan_fake_target = -1
         # -----------------------------------------------------------------------------
         # optimizer settings
         # -----------------------------------------------------------------------------

@@ -1,14 +1,13 @@
-MODEL:
-  backbone: "resnet"
-  base_dir: "models.jointgan"
-LOSS:
-  adv_loss: "least_square_relativistic"
-  relativistic: True
-
 DATA:
   name: "Tiny_ImageNet"
   img_size: 64
   num_classes: 200
+MODEL:
+  backbone: "resnet"
+  jointgan_arch: "concat"
+LOSS:
+  adv_loss: "least_square"
+  jointgan_object: "r"
 OPTIMIZATION:
   batch_size: 256
   g_lr: 0.0001

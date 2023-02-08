@@ -4,10 +4,9 @@ DATA:
   num_classes: 200
 MODEL:
   backbone: "resnet"
-  base_dir: "models.jointgan"
-
+  jointgan_arch: "concat"
 LOSS:
-  adv_loss: "wasserstein_relativistic"
+  adv_loss: "wasserstein"
+  jointgan_object: "r"
   apply_gp: True
   gp_lambda: 10.0
-  relativistic: True
