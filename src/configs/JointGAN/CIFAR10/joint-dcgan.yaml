@@ -9,9 +9,8 @@ MODEL:
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "vanilla"
-  jointgan_object: "r"
+  jointgan_object: "f"
   align_same: True
-  real_center: True
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 200000
