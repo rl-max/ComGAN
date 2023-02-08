@@ -67,7 +67,8 @@ class Dataset_(Dataset):
                  random_flip=False,
                  normalize=True,
                  hdf5_path=None,
-                 load_data_in_memory=False):
+                 load_data_in_memory=False, 
+                 ):
         super(Dataset_, self).__init__()
         self.data_name = data_name
         self.data_dir = data_dir
@@ -118,7 +119,6 @@ class Dataset_(Dataset):
         else:
             mode = "train" if self.train == True else "valid"
             root = os.path.join(self.data_dir, mode)
-            print(root)
             self.data = ImageFolder(root=root)
 
     def _get_hdf5(self, index):

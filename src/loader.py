@@ -13,7 +13,7 @@ import random
 import warnings
 
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -140,7 +140,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
 
     if  load_eval_dataset:
         if local_rank == 0:
-            logger.info("Load {name} {ref} dataset for evaluation.".format(name=cfgs.DATA.name, ref=cfgs.RUN.ref_dataset))
+            logger.info("Load {name} {ref} dataset with {num_data} data for evaluation.".format(
+                        name=cfgs.DATA.name, ref=cfgs.RUN.ref_dataset, num_data=cfgs.RUN.num_eval_data))
         eval_dataset = Dataset_(data_name=cfgs.DATA.name,
                                 data_dir=cfgs.RUN.data_dir,
                                 train=True if cfgs.RUN.ref_dataset == "train" else False,
@@ -150,7 +151,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                 random_flip=False,
                                 hdf5_path=None,
                                 normalize=True,
-                                load_data_in_memory=False)
+                                load_data_in_memory=False, 
+                                )
+        if cfgs.RUN.num_eval_data != -1:
+            indices = torch.randint(0, len(eval_dataset), (cfgs.RUN.num_eval_data,))
+            eval_dataset = Subset(eval_dataset, indices)
         if local_rank == 0:
             logger.info("Eval dataset size: {dataset_size}".format(dataset_size=len(eval_dataset)))
     else:
