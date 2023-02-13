@@ -222,13 +222,12 @@ class Configurations(object):
         # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same)
         # \in [N/A, r, f, s]
         self.LOSS.jointgan_object = "N/A"  
-        # whether to neutralize the object in case of rf combination
-        self.LOSS.real_center = False
-        # whether to train with respec to rr, ff combination
-        self.LOSS.align_same = False
+        # whether to apply rr ff regularization
+        self.LOSS.apply_reg = False
         # custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = -1
+        self.LOSS.lsgan_gen_center = False
         # -----------------------------------------------------------------------------
         # optimizer settings
         # -----------------------------------------------------------------------------
@@ -439,21 +438,25 @@ class Configurations(object):
                     losses.g_ls,
                     real_target=self.LOSS.lsgan_real_target,
                     fake_target=self.LOSS.lsgan_fake_target,
+                    gen_center=self.LOSS.lsgan_gen_center,
                 ),
                  "least_square_joint": partial(
                     losses.g_ls_joint,
                     real_target=self.LOSS.lsgan_real_target,
                     fake_target=self.LOSS.lsgan_fake_target,
+                    gen_center=self.LOSS.lsgan_gen_center
                 ),
                 "least_square_rgan": partial(
                     losses.g_ls_rgan,
                     real_target=self.LOSS.lsgan_real_target,
                     fake_target=self.LOSS.lsgan_fake_target,
+                    gen_center=self.LOSS.lsgan_gen_center
                 ),
                 "least_square_ragan": partial(
                     losses.g_ls_ragan,
                     real_target=self.LOSS.lsgan_real_target,
                     fake_target=self.LOSS.lsgan_fake_target,
+                    gen_center=self.LOSS.lsgan_gen_center
                 ),
                 "hinge": losses.g_hinge,
                 "hinge_joint": losses.g_hinge_joint,
@@ -500,6 +503,43 @@ class Configurations(object):
                 "wasserstein_joint": losses.d_wasserstein,
             }
             
+            d_regs = {
+                "vanilla": losses.d_vanilla_reg,
+                "vanilla_joint": losses.d_vanilla_joint_reg,
+                "vanilla_rgan": losses.d_vanilla_reg,
+                "vanilla_ragan": losses.d_vanilla_reg,
+                "logistic": losses.d_vanilla_reg,
+                "logistic_joint": losses.d_vanilla_joint_reg,
+                "logistic_rgan": losses.d_vanilla_reg,
+                "logistic_ragan": losses.d_vanilla_reg,
+                "least_square": partial(
+                    losses.d_ls_reg,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
+                ),
+                "least_square_joint": partial(
+                    losses.d_ls_joint_reg,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
+                ),
+                "least_square_rgan": partial(
+                    losses.d_ls_reg,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
+                ),
+                "least_square_ragan": partial(
+                    losses.d_ls_reg,
+                    real_target=self.LOSS.lsgan_real_target,
+                    fake_target=self.LOSS.lsgan_fake_target,
+                ),
+                "hinge": losses.d_hinge_reg,
+                "hinge_joint": losses.d_hinge_joint_reg,
+                "hinge_rgan": losses.d_hinge_reg,
+                "hinge_ragan": losses.d_hinge_reg,
+                "wasserstein": losses.d_wasserstein_reg,
+                "wasserstein_joint": losses.d_wasserstein_joint_reg,
+            }
+
             loss = self.LOSS.adv_loss
             if self.LOSS.jointgan_object != 'N/A':
                 if self.MODEL.jointgan_arch == 'rgan':
@@ -511,6 +551,8 @@ class Configurations(object):
             
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
+            self.LOSS.d_reg = d_regs[loss]
+            
 
     def define_modules(self):
         if self.MODEL.apply_g_sn:
@@ -712,12 +754,8 @@ class Configurations(object):
         assert self.LOSS.jointgan_object in ["N/A", "r", "f", "s"]
         assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan"]
 
-        if self.LOSS.adv_loss in ["wasserstein", "hinge", "MH"]:
-            assert self.LOSS.real_center == False, "this lose type does not support target modifications"
-            assert self.LOSS.align_same == False, "this lose type does not support target modifications"
-
         if self.LOSS.adv_loss == "wasserstein":
-            assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be used with wassersteingan "
+            assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be combined with wassersteingan "
 
         if self.RUN.distributed_data_parallel and self.RUN.mixed_precision:
             print("-"*120)
