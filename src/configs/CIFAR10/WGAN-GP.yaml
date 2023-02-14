@@ -5,5 +5,4 @@ DATA:
 LOSS:
   adv_loss: "wasserstein"
   apply_gp: True
-  apply_reg: True
   gp_lambda: 10.0
