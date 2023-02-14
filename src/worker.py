@@ -194,6 +194,7 @@ class WORKER(object):
             wandb.config.jointgan_arch = self.MODEL.jointgan_arch
             wandb.config.apply_reg = self.LOSS.apply_reg
             wandb.config.feature_reg = self.LOSS.feature_reg
+            wandb.config.reg_weight = self.LOSS.reg_weight
             wandb.config.adv_loss = self.LOSS.adv_loss
             wandb.config.lsgan_real_target = self.LOSS.lsgan_real_target
             wandb.config.lsgan_fake_target = self.LOSS.lsgan_fake_target
@@ -342,13 +343,16 @@ class WORKER(object):
                                                          DDP=self.DDP)
                     if self.LOSS.apply_reg:
                         if self.input_concat:
-                            dis_acml_loss += self.LOSS.d_reg(d_logit1=rr_dict["adv_output"], d_logit2=ff_dict["adv_output"], 
-                                                             DDP=self.DDP)
+                            dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=rr_dict["adv_output"], 
+                                                                                    d_logit2=ff_dict["adv_output"], 
+                                                                                    DDP=self.DDP)
                         else:
-                            dis_acml_loss += self.LOSS.d_reg(d_logit1=real_dict["adv_output"], d_logit2=real_dict2["adv_output"], 
-                                                             DDP=self.DDP)
-                            dis_acml_loss += self.LOSS.d_reg(d_logit1=fake_dict["adv_output"], d_logit2=fake_dict2["adv_output"], 
-                                                             DDP=self.DDP)
+                            dis_acml_loss += 0.5 * self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=real_dict["adv_output"], 
+                                                                                          d_logit2=real_dict2["adv_output"], 
+                                                                                          DDP=self.DDP)
+                            dis_acml_loss += 0.5 * self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=fake_dict["adv_output"], 
+                                                                                          d_logit2=fake_dict2["adv_output"], 
+                                                                                          DDP=self.DDP)
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
                     if self.MODEL.d_cond_mtd in self.MISC.classifier_based_GAN:

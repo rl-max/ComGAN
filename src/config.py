@@ -225,6 +225,8 @@ class Configurations(object):
         self.LOSS.apply_reg = False
         # wheter to apply regularization on features
         self.LOSS.feature_reg = False
+        # regularization weight
+        self.LOSS.reg_weight = 0.1
         # custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = -1
