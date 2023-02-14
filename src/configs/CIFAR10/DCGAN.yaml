@@ -9,6 +9,7 @@ MODEL:
 LOSS:
   adv_loss: "vanilla"
   apply_reg: True
+  feature_reg: True
   reg_weight: 0.1
 OPTIMIZATION:
   d_updates_per_step: 2
