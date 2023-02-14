@@ -193,6 +193,7 @@ class WORKER(object):
             wandb.config.jointgan_object = self.LOSS.jointgan_object
             wandb.config.jointgan_arch = self.MODEL.jointgan_arch
             wandb.config.apply_reg = self.LOSS.apply_reg
+            wandb.config.feature_reg = self.LOSS.feature_reg
             wandb.config.adv_loss = self.LOSS.adv_loss
             wandb.config.lsgan_real_target = self.LOSS.lsgan_real_target
             wandb.config.lsgan_fake_target = self.LOSS.lsgan_fake_target

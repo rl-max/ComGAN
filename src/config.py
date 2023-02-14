@@ -219,11 +219,12 @@ class Configurations(object):
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
 
-        # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same)
-        # \in [N/A, r, f, s]
+        # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same) \in [N/A, r, f, s]
         self.LOSS.jointgan_object = "N/A"  
         # whether to apply rr ff regularization
         self.LOSS.apply_reg = False
+        # wheter to apply regularization on features
+        self.LOSS.feature_reg = False
         # custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = -1
@@ -551,7 +552,10 @@ class Configurations(object):
             
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
-            self.LOSS.d_reg = d_regs[loss]
+            if self.LOSS.feature_reg:
+                self.LOSS.d_reg = losses.d_reg
+            else:
+                self.LOSS.d_reg = d_regs[loss]
             
 
     def define_modules(self):

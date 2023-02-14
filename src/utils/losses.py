@@ -384,6 +384,12 @@ def d_wasserstein_joint_reg(d_logit1, d_logit2, DDP):
     return d_reg_loss.mean()
 
 
+#general regularization
+def d_reg(d_logit1, d_logit2, DDP):
+    d_reg_loss = torch.abs(d_logit1 - d_logit2)
+    return d_reg_loss.mean()
+
+
 def crammer_singer_loss(adv_output, label, DDP, **_):
     # https://github.com/ilyakava/BigGAN-PyTorch/blob/master/train_fns.py
     # crammer singer criterion
