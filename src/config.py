@@ -221,12 +221,10 @@ class Configurations(object):
 
         # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same) \in [N/A, r, f, s]
         self.LOSS.jointgan_object = "N/A"  
-        # whether to apply rr ff regularization
-        self.LOSS.apply_reg = False
-        # wheter to apply regularization on features
-        self.LOSS.feature_reg = False
+        # rr ff regularization applied \in [N/A, default, l1, l2]
+        self.LOSS.apply_reg = "N/A"
         # regularization weight
-        self.LOSS.reg_weight = 0.1
+        self.LOSS.reg_weight = 1.0
         # custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = -1
@@ -554,8 +552,10 @@ class Configurations(object):
             
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
-            if self.LOSS.feature_reg:
-                self.LOSS.d_reg = losses.d_reg
+            if self.LOSS.apply_reg == 'l1':
+                self.LOSS.d_reg = losses.d_reg_l1
+            elif self.LOSS.apply_reg == 'l2':
+                self.LOSS.d_reg = losses.d_reg_l2
             else:
                 self.LOSS.d_reg = d_regs[loss]
             
@@ -759,6 +759,7 @@ class Configurations(object):
         #write compatibility code
         assert self.LOSS.jointgan_object in ["N/A", "r", "f", "s"]
         assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan"]
+        assert self.LOSS.apply_reg in ["N/A", "default", "l1", "l2"]
 
         if self.LOSS.adv_loss == "wasserstein":
             assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be combined with wassersteingan "

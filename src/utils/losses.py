@@ -385,8 +385,12 @@ def d_wasserstein_joint_reg(d_logit1, d_logit2, DDP):
 
 
 #general regularization
-def d_reg(d_logit1, d_logit2, DDP):
+def d_reg_l1(d_logit1, d_logit2, DDP):
     d_reg_loss = torch.abs(d_logit1 - d_logit2)
+    return d_reg_loss.mean()
+
+def d_reg_l2(d_logit1, d_logit2, DDP):
+    d_reg_loss = (d_logit1 - d_logit2) ** 2
     return d_reg_loss.mean()
 
 

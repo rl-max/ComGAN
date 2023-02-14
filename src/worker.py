@@ -193,7 +193,6 @@ class WORKER(object):
             wandb.config.jointgan_object = self.LOSS.jointgan_object
             wandb.config.jointgan_arch = self.MODEL.jointgan_arch
             wandb.config.apply_reg = self.LOSS.apply_reg
-            wandb.config.feature_reg = self.LOSS.feature_reg
             wandb.config.reg_weight = self.LOSS.reg_weight
             wandb.config.adv_loss = self.LOSS.adv_loss
             wandb.config.lsgan_real_target = self.LOSS.lsgan_real_target
@@ -273,7 +272,7 @@ class WORKER(object):
                     real_labels = real_label_basket[batch_counter].to(self.local_rank, non_blocking=True)
                     # sample fake images and labels from p(G(z), y)
                     fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = generate_images()
-                    if self.LOSS.apply_reg:
+                    if self.LOSS.apply_reg != 'N/A':
                         real_images2 = real_image_basket[batch_counter + 1].to(self.local_rank, non_blocking=True)
                         fake_images2, _, _, _, _, _, _, _, _ = generate_images()
 
@@ -286,24 +285,24 @@ class WORKER(object):
                             f = torch.arange(-blur_size, blur_size + 1, device=real_images.device).div(blur_sigma).square().neg().exp2()
                             real_images = upfirdn2d.filter2d(real_images, f / f.sum())
                             fake_images = upfirdn2d.filter2d(fake_images, f / f.sum())
-                            if self.LOSS.apply_reg:
+                            if self.LOSS.apply_reg != 'N/A':
                                 real_images2 = upfirdn2d.filter2d(real_images2, f / f.sum())
                                 fake_images2 = upfirdn2d.filter2d(fake_images2, f / f.sum())
 
                     # shuffle real and fake images (APA)
                     if self.AUG.apply_apa:
                         real_images = apa_aug.apply_apa_aug(real_images, fake_images.detach(), self.aa_p, self.local_rank)
-                        if self.LOSS.apply_reg:
+                        if self.LOSS.apply_reg != 'N/A':
                             real_images2 = apa_aug.apply_apa_aug(real_images2, fake_images2.detach(), self.aa_p, self.local_rank)
 
                     real_images_ = self.AUG.series_augment(real_images)
                     fake_images_ = self.AUG.series_augment(fake_images)
-                    if self.LOSS.apply_reg:
+                    if self.LOSS.apply_reg != 'N/A':
                         real_images2_ = self.AUG.series_augment(real_images2)
                         fake_images2_ = self.AUG.series_augment(fake_images2)
             
                     if self.input_concat:
-                        if self.LOSS.apply_reg:
+                        if self.LOSS.apply_reg != 'N/A':
                             rr_images_ = torch.cat([real_images_, real_images2_], dim=1)
                             ff_images_ = torch.cat([fake_images_, fake_images2_], dim=1)
                         real_images_, fake_images_ = self.concat(real_images_, fake_images_)
@@ -311,7 +310,7 @@ class WORKER(object):
                         
                     real_dict = self.Dis(real_images_, real_labels)
                     fake_dict = self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
-                    if self.LOSS.apply_reg:
+                    if self.LOSS.apply_reg != 'N/A':
                         if self.input_concat:
                             rr_dict = self.Dis(rr_images_)
                             ff_dict = self.Dis(ff_images_)
@@ -341,7 +340,7 @@ class WORKER(object):
                     else:
                         dis_acml_loss = self.LOSS.d_loss(d_logit_real=real_dict["adv_output"], d_logit_fake=fake_dict["adv_output"], 
                                                          DDP=self.DDP)
-                    if self.LOSS.apply_reg:
+                    if self.LOSS.apply_reg != 'N/A':
                         if self.input_concat:
                             dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=rr_dict["adv_output"], 
                                                                                     d_logit2=ff_dict["adv_output"], 
@@ -484,7 +483,7 @@ class WORKER(object):
 
                     # adjust gradients for applying gradient accumluation trick
                     dis_acml_loss = dis_acml_loss / self.OPTIMIZATION.acml_steps
-                    if self.LOSS.apply_reg:
+                    if self.LOSS.apply_reg != 'N/A':
                         batch_counter += 2
                     else:
                         batch_counter += 1
