@@ -242,12 +242,12 @@ def g_vanilla_ragan(d_logit_real, d_logit_fake, DDP):
 
 
 #std regularizations
-def d_vanilla_reg(d_logit1, d_logit2, DDP):
+def d_logistic_reg(d_logit1, d_logit2, DDP):
     logit = d_logit1 - d_logit2
     reg_loss = BCE_loss(logit, 0.5 * torch.ones_like(logit))
     return reg_loss
 
-def d_vanilla_joint_reg(d_logit1, d_logit2, DDP):
+def d_logistic_joint_reg(d_logit1, d_logit2, DDP):
     reg_loss = BCE_loss(d_logit1, 0.5 * torch.ones_like(d_logit1)) + \
                BCE_loss(d_logit2, 0.5 * torch.ones_like(d_logit2))
     return reg_loss
@@ -301,18 +301,6 @@ def g_ls_ragan(d_logit_real, d_logit_fake, DDP, real_target=1, fake_target=-1, g
     return g_loss.mean()
 
 
-#ls regularizations
-def d_ls_reg(d_logit1, d_logit2, DDP, real_target=1, fake_target=-1):
-    center_target = (real_target + fake_target) / 2
-    d_reg_loss = (d_logit1 - d_logit2 - center_target) ** 2
-    return d_reg_loss.mean()
-
-def d_ls_joint_reg(d_logit1, d_logit2, DDP, real_target=1, fake_target=-1):
-    center_target = (real_target + fake_target) / 2
-    d_reg_loss = (d_logit1 - center_target) ** 2 + (d_logit2 - center_target) ** 2
-    return d_reg_loss.mean()
-
-
 #hingegan
 def d_hinge(d_logit_real, d_logit_fake, DDP):
     d_loss = F.relu(1. - d_logit_real) + F.relu(1. + d_logit_fake)
@@ -350,16 +338,6 @@ def g_hinge_ragan(d_logit_real, d_logit_fake, DDP):
     return g_loss.mean()
 
 
-#hinge regularizations
-def d_hinge_reg(d_logit1, d_logit2, DDP):
-    d_reg_loss = torch.abs(d_logit1 - d_logit2) 
-    return d_reg_loss.mean()
-
-def d_hinge_joint_reg(d_logit1, d_logit2, DDP):
-    d_reg_loss = torch.abs(d_logit1) + torch.abs(d_logit2)
-    return d_reg_loss.mean()
-
-
 #wassersteingan
 def d_wasserstein(d_logit_real, d_logit_fake, DDP):
     d_loss = d_logit_fake - d_logit_real
@@ -374,23 +352,13 @@ def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP):
     return g_loss.mean()
 
 
-#wasserstein regularizations
-def d_wasserstein_reg(d_logit1, d_logit2, DDP):
-    d_reg_loss = torch.abs(d_logit1 - d_logit2)
-    return d_reg_loss.mean()
-
-def d_wasserstein_joint_reg(d_logit1, d_logit2, DDP):
-    d_reg_loss = torch.abs(d_logit1) + torch.abs(d_logit2)
-    return d_reg_loss.mean()
-
-
 #general regularization
-def d_reg_l1(d_logit1, d_logit2, DDP):
-    d_reg_loss = torch.abs(d_logit1 - d_logit2)
+def d_reg(d_logit1, d_logit2, DDP):
+    d_reg_loss = (d_logit1 - d_logit2) ** 2
     return d_reg_loss.mean()
 
-def d_reg_l2(d_logit1, d_logit2, DDP):
-    d_reg_loss = (d_logit1 - d_logit2) ** 2
+def d_joint_reg(d_logit1, d_logit2, DDP):
+    d_reg_loss = (d_logit1) ** 2 + (d_logit2) ** 2
     return d_reg_loss.mean()
 
 

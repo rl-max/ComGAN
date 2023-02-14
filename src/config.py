@@ -221,7 +221,7 @@ class Configurations(object):
 
         # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same) \in [N/A, r, f, s]
         self.LOSS.jointgan_object = "N/A"  
-        # rr ff regularization applied \in [N/A, default, l1, l2]
+        # rr ff regularization applied \in [N/A, l2, logistic]
         self.LOSS.apply_reg = "N/A"
         # regularization weight
         self.LOSS.reg_weight = 1.0
@@ -503,43 +503,6 @@ class Configurations(object):
                 "wasserstein": losses.d_wasserstein,
                 "wasserstein_joint": losses.d_wasserstein,
             }
-            
-            d_regs = {
-                "vanilla": losses.d_vanilla_reg,
-                "vanilla_joint": losses.d_vanilla_joint_reg,
-                "vanilla_rgan": losses.d_vanilla_reg,
-                "vanilla_ragan": losses.d_vanilla_reg,
-                "logistic": losses.d_vanilla_reg,
-                "logistic_joint": losses.d_vanilla_joint_reg,
-                "logistic_rgan": losses.d_vanilla_reg,
-                "logistic_ragan": losses.d_vanilla_reg,
-                "least_square": partial(
-                    losses.d_ls_reg,
-                    real_target=self.LOSS.lsgan_real_target,
-                    fake_target=self.LOSS.lsgan_fake_target,
-                ),
-                "least_square_joint": partial(
-                    losses.d_ls_joint_reg,
-                    real_target=self.LOSS.lsgan_real_target,
-                    fake_target=self.LOSS.lsgan_fake_target,
-                ),
-                "least_square_rgan": partial(
-                    losses.d_ls_reg,
-                    real_target=self.LOSS.lsgan_real_target,
-                    fake_target=self.LOSS.lsgan_fake_target,
-                ),
-                "least_square_ragan": partial(
-                    losses.d_ls_reg,
-                    real_target=self.LOSS.lsgan_real_target,
-                    fake_target=self.LOSS.lsgan_fake_target,
-                ),
-                "hinge": losses.d_hinge_reg,
-                "hinge_joint": losses.d_hinge_joint_reg,
-                "hinge_rgan": losses.d_hinge_reg,
-                "hinge_ragan": losses.d_hinge_reg,
-                "wasserstein": losses.d_wasserstein_reg,
-                "wasserstein_joint": losses.d_wasserstein_joint_reg,
-            }
 
             loss = self.LOSS.adv_loss
             if self.LOSS.jointgan_object != 'N/A':
@@ -552,13 +515,17 @@ class Configurations(object):
             
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
-            if self.LOSS.apply_reg == 'l1':
-                self.LOSS.d_reg = losses.d_reg_l1
-            elif self.LOSS.apply_reg == 'l2':
-                self.LOSS.d_reg = losses.d_reg_l2
-            else:
-                self.LOSS.d_reg = d_regs[loss]
-            
+            if self.LOSS.apply_reg == 'l2':
+                if self.MODEL.jointgan_arch == 'concat':
+                    self.LOSS.d_reg = losses.d_joint_reg
+                else:
+                    self.LOSS.d_reg = losses.d_reg
+            elif self.LOSS.apply_reg == 'logistic':
+                if self.MODEL.jointgan_arch == 'concat':
+                    self.LOSS.d_reg = losses.d_logistic_joint_reg
+                else:
+                    self.LOSS.d_reg = losses.d_logistic_reg
+
 
     def define_modules(self):
         if self.MODEL.apply_g_sn:
@@ -759,7 +726,7 @@ class Configurations(object):
         #write compatibility code
         assert self.LOSS.jointgan_object in ["N/A", "r", "f", "s"]
         assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan"]
-        assert self.LOSS.apply_reg in ["N/A", "default", "l1", "l2"]
+        assert self.LOSS.apply_reg in ["N/A", "l2", "logistic"]
 
         if self.LOSS.adv_loss == "wasserstein":
             assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be combined with wassersteingan "
