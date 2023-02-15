@@ -517,7 +517,7 @@ class Configurations(object):
             self.LOSS.d_loss = d_losses[loss]
 
             if self.LOSS.apply_reg in ['l2_mean', 'logistic_mean']:
-                assert self.MODEK.jointgan_arch != 'concat', "mean regularization is not appliciable to concat architectures"
+                assert self.MODEL.jointgan_arch != 'concat', "mean regularization is not appliciable to concat architectures"
 
             if self.LOSS.apply_reg == 'l2':
                 if self.MODEL.jointgan_arch == 'concat':
@@ -536,7 +536,7 @@ class Configurations(object):
             
             elif self.LOSS.apply_reg == 'logistic_mean':
                 self.LOSS.d_reg = losses.d_logistic_mean_reg
-                
+
 
     def define_modules(self):
         if self.MODEL.apply_g_sn:
