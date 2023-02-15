@@ -247,6 +247,11 @@ def d_logistic_reg(d_logit1, d_logit2, DDP):
     reg_loss = BCE_loss(logit, 0.5 * torch.ones_like(logit))
     return reg_loss
 
+def d_logistic_mean_reg(d_logit1, d_logit2, DDP):
+    logit = d_logit1 - d_logit2.mean()
+    reg_loss = BCE_loss(logit, 0.5 * torch.ones_like(logit))
+    return reg_loss
+
 def d_logistic_joint_reg(d_logit1, d_logit2, DDP):
     reg_loss = BCE_loss(d_logit1, 0.5 * torch.ones_like(d_logit1)) + \
                BCE_loss(d_logit2, 0.5 * torch.ones_like(d_logit2))
@@ -355,6 +360,10 @@ def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP):
 #general regularization
 def d_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = (d_logit1 - d_logit2) ** 2
+    return d_reg_loss.mean()
+
+def d_mean_reg(d_logit1, d_logit2, DDP):
+    d_reg_loss = (d_logit1 - d_logit2.mean()) ** 2
     return d_reg_loss.mean()
 
 def d_joint_reg(d_logit1, d_logit2, DDP):
