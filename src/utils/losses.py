@@ -358,11 +358,11 @@ def g_wasserstein_joint(d_logit_real, d_logit_fake, DDP):
 
 
 #general regularization
-def d_l2_reg(d_logit1, d_logit2, DDP, clamp=0.01):
+def d_l2_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = (d_logit1 - d_logit2) ** 2
     return d_reg_loss.mean()
 
-def d_l2_mean_reg(d_logit1, d_logit2, DDP, clamp=0.01):
+def d_l2_mean_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = (d_logit1 - d_logit2.mean()) ** 2
     return d_reg_loss.mean()
 
@@ -370,13 +370,14 @@ def d_l2_joint_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = (d_logit1) ** 2 + (d_logit2) ** 2
     return d_reg_loss.mean()
 
-def d_l1_reg(d_logit1, d_logit2, DDP, clamp=0.01):
+def d_l1_reg(d_logit1, d_logit2, DDP, clamp=0.1):
     d_reg_loss = torch.abs(d_logit1 - d_logit2)
+    d_reg_loss = torch.clamp(d_reg_loss, min=clamp)
     return d_reg_loss.mean()
 
-def d_l1_mean_reg(d_logit1, d_logit2, DDP, clamp=0.01):
+def d_l1_mean_reg(d_logit1, d_logit2, DDP, clamp=0.1):
     d_reg_loss = torch.abs(d_logit1 - d_logit2.mean())
-    print(d_reg_loss.mean().item())
+    d_reg_loss = torch.clamp(d_reg_loss, min=clamp)
     return d_reg_loss.mean()
 
 def d_l1_joint_reg(d_logit1, d_logit2, DDP):

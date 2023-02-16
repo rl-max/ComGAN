@@ -6,4 +6,5 @@ LOSS:
   adv_loss: "wasserstein"
   apply_gp: True
   apply_reg: "l1_mean"
+  reg_clamp: 0.1
   gp_lambda: 10.0
