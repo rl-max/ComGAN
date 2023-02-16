@@ -253,8 +253,8 @@ def d_logistic_mean_reg(d_logit1, d_logit2, DDP):
     return reg_loss
 
 def d_new_logistic_mean_reg(w, h1, h2, DDP):
-    new_h = h1 - torch.mean(h2, dim=0, keepdim=True)
-    logit = torch.mm(new_h, w.requires_grad_(False).t())
+    new_h = h1 - torch.mean(h2, dim=0, keepdim=True).detach()
+    logit = torch.mm(new_h, w.t())
     reg_loss = BCE_loss(logit, 0.5 * torch.ones_like(logit))
     return reg_loss
 
@@ -378,8 +378,8 @@ def d_mean_reg(d_logit1, d_logit2, DDP):
     return d_reg_loss.mean()
 
 def d_new_mean_reg(w, h1, h2, DDP):
-    new_h = h1 - torch.mean(h2, dim=0, keepdim=True)
-    logit = torch.mm(new_h, w.requires_grad_(False).t())
+    new_h = h1 - torch.mean(h2, dim=0, keepdim=True).detach()
+    logit = torch.mm(new_h, w.t())
     return logit.pow(2).mean()
 
 def d_mean_sg_reg(d_logit1, d_logit2, DDP):
