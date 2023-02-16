@@ -378,11 +378,8 @@ def d_mean_reg(d_logit1, d_logit2, DDP):
     return d_reg_loss.mean()
 
 def d_new_mean_reg(w, h1, h2, DDP):
-    print(w.shape, h1.shape, h2.shape)
     new_h = h1 - torch.mean(h2, dim=0, keepdim=True)
-    print(new_h.shape)
     logit = torch.mm(new_h, w.requires_grad_(False).t())
-    print(logit.shape)
     return logit.pow(2).mean()
 
 def d_mean_sg_reg(d_logit1, d_logit2, DDP):
