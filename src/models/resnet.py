@@ -428,7 +428,6 @@ class Discriminator(nn.Module):
                         mi_proxy = F.normalize(mi_proxy, dim=1)
         return {
             "h": h,
-            "linear_w": self.linear1.weight,
             "adv_output": adv_output,
             "embed": embed,
             "proxy": proxy,

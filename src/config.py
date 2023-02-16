@@ -221,8 +221,7 @@ class Configurations(object):
 
         # jointgan object to use: N/A(vanillaGAN) r(real), f(fake), s(same) \in [N/A, r, f, s]
         self.LOSS.jointgan_object = "N/A"  
-        # rr ff regularization applied \in [N/A, l2, l2_mean, l2_mean_new, l2_mean_sg, logistic, 
-                                         # logistic_mean, logistic_mean_new, logistic_mean_sg]
+        # rr ff regularization applied \in [N/A, l1, l1_mean, l2, l2_mean, logistic, logistic_mean]
         self.LOSS.apply_reg = "N/A"
         # regularization weight
         self.LOSS.reg_weight = 1.0
@@ -517,40 +516,36 @@ class Configurations(object):
             self.LOSS.g_loss = g_losses[loss]
             self.LOSS.d_loss = d_losses[loss]
 
-            if self.LOSS.apply_reg in ['l2_mean', 'l2_mean_new', 'l2_mean_sg', 'logistic_mean', 'logistic_mean_new', 'logistic_mean_sg'] \
-                                       and self.LOSS.jointgan_object != 'N/A':
+            if self.LOSS.apply_reg in ['l1_mean', 'l2_mean', 'logistic_mean'] and self.LOSS.jointgan_object != 'N/A':
                 assert self.MODEL.jointgan_arch != 'concat', "mean regularization is not appliciable to concat architectures"
 
-            if self.LOSS.apply_reg == 'l2':
+            if self.LOSS.apply_reg == 'l1':
                 if self.MODEL.jointgan_arch == 'concat':
-                    self.LOSS.d_reg = losses.d_joint_reg
+                    self.LOSS.d_reg = losses.d_l1_joint_reg
                 else:
-                    self.LOSS.d_reg = losses.d_reg
+                    self.LOSS.d_reg = losses.d_l1_reg
+            
+            elif self.MODEL.apply_reg == 'l1_mean':
+                self.LOSS.d_reg = losses.d_l1_mean_reg
+
+            elif self.LOSS.apply_reg == 'l2':
+                if self.MODEL.jointgan_arch == 'concat':
+                    self.LOSS.d_reg = losses.d_l2_joint_reg
+                else:
+                    self.LOSS.d_reg = losses.d_l2_reg
             
             elif self.LOSS.apply_reg == 'l2_mean':
-                self.LOSS.d_reg = losses.d_mean_reg
-
-            elif self.LOSS.apply_reg == 'l2_mean_new':
-                self.LOSS.d_reg = losses.d_new_mean_reg
-            
-            elif self.LOSS.apply_reg == 'l2_mean_sg':
-                self.LOSS.d_reg = losses.d_mean_sg_reg
+                self.LOSS.d_reg = losses.d_l2_mean_reg
 
             elif self.LOSS.apply_reg == 'logistic':
                 if self.MODEL.jointgan_arch == 'concat':
                     self.LOSS.d_reg = losses.d_logistic_joint_reg
                 else:
                     self.LOSS.d_reg = losses.d_logistic_reg
-            
-            elif self.LOSS.apply_reg == 'logistic_mean_new':
-                self.LOSS.d_reg = losses.d_new_logistic_mean_reg
 
             elif self.LOSS.apply_reg == 'logistic_mean':
                 self.LOSS.d_reg = losses.d_logistic_mean_reg
             
-            elif self.LOSS.apply_reg == 'logistic_mean_sg':
-                self.LOSS.d_reg = losses.d_logistic_mean_sg_reg
-
     def define_modules(self):
         if self.MODEL.apply_g_sn:
             self.MODULES.g_conv2d = ops.snconv2d
@@ -750,8 +745,7 @@ class Configurations(object):
         #write compatibility code
         assert self.LOSS.jointgan_object in ["N/A", "r", "f", "s"]
         assert self.MODEL.jointgan_arch in ["concat", "rgan", "ragan"]
-        assert self.LOSS.apply_reg in ["N/A", "l2", "l2_mean", "l2_mean_new", "l2_mean_sg", 
-                                       "logistic", "logistic_mean", "logistic_mean_new" "logistic_mean_sg"]
+        assert self.LOSS.apply_reg in ["N/A", "l1", "l1_mean", "l2", "l2_mean", "logistic", "logistic_mean"]
 
         if self.LOSS.adv_loss == "wasserstein":
             assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be combined with wassersteingan "
