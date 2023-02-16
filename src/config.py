@@ -525,7 +525,7 @@ class Configurations(object):
                 else:
                     self.LOSS.d_reg = losses.d_l1_reg
             
-            elif self.MODEL.apply_reg == 'l1_mean':
+            elif self.LOSS.apply_reg == 'l1_mean':
                 self.LOSS.d_reg = losses.d_l1_mean_reg
 
             elif self.LOSS.apply_reg == 'l2':
