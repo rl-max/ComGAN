@@ -370,14 +370,12 @@ def d_l2_joint_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = (d_logit1) ** 2 + (d_logit2) ** 2
     return d_reg_loss.mean()
 
-def d_l1_reg(d_logit1, d_logit2, DDP, clamp=0.1):
+def d_l1_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = torch.abs(d_logit1 - d_logit2)
-    d_reg_loss = torch.clamp(d_reg_loss, min=clamp)
     return d_reg_loss.mean()
 
-def d_l1_mean_reg(d_logit1, d_logit2, DDP, clamp=0.1):
+def d_l1_mean_reg(d_logit1, d_logit2, DDP):
     d_reg_loss = torch.abs(d_logit1 - d_logit2.mean())
-    d_reg_loss = torch.clamp(d_reg_loss, min=clamp)
     return d_reg_loss.mean()
 
 def d_l1_joint_reg(d_logit1, d_logit2, DDP):

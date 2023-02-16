@@ -223,8 +223,6 @@ class Configurations(object):
         self.LOSS.jointgan_object = "N/A"  
         # rr ff regularization applied \in [N/A, l1, l1_mean, l2, l2_mean, logistic, logistic_mean]
         self.LOSS.apply_reg = "N/A"
-        # clipping value for smooth regularization
-        self.LOSS.reg_clamp = 0.0
         # regularization weight
         self.LOSS.reg_weight = 1.0
         # custom targets for lsgan
@@ -525,10 +523,10 @@ class Configurations(object):
                 if self.MODEL.jointgan_arch == 'concat':
                     self.LOSS.d_reg = losses.d_l1_joint_reg
                 else:
-                    self.LOSS.d_reg = partial(losses.d_l1_reg, clamp=self.LOSS.reg_clamp)
+                    self.LOSS.d_reg = losses.d_l1_reg
             
             elif self.LOSS.apply_reg == 'l1_mean':
-                self.LOSS.d_reg = partial(losses.d_l1_mean_reg, clamp=self.LOSS.reg_clamp)
+                self.LOSS.d_reg = losses.d_l1_mean_reg
 
             elif self.LOSS.apply_reg == 'l2':
                 if self.MODEL.jointgan_arch == 'concat':
