@@ -4,6 +4,6 @@ DATA:
   num_classes: 10
 LOSS:
   adv_loss: "wasserstein"
-  apply_gp: True
-  apply_reg: "l1_mean"
+  apply_gp: False
+  apply_reg: "l2_mean"
   gp_lambda: 10.0
