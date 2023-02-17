@@ -198,6 +198,7 @@ class WORKER(object):
             wandb.config.lsgan_real_target = self.LOSS.lsgan_real_target
             wandb.config.lsgan_fake_target = self.LOSS.lsgan_fake_target
             wandb.config.lsgan_gen_center = self.LOSS.lsgan_gen_center
+            wandb.config.apply_gp = self.LOSS.apply_gp
 
         self.start_time = datetime.now()
 
