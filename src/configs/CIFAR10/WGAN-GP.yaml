@@ -5,5 +5,5 @@ DATA:
 LOSS:
   adv_loss: "wasserstein"
   apply_gp: False
-  apply_reg: "l2_mean"
+  apply_reg: "N/A"
   gp_lambda: 10.0
