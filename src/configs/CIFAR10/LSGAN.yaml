@@ -8,6 +8,7 @@ MODEL:
   d_conv_dim: "N/A"
 LOSS:
   adv_loss: "least_square"
+  apply_reg: "l2_mean"
   lsgan_real_target: 1
   lsgan_fake_target: -1
 OPTIMIZATION:
