@@ -7,3 +7,5 @@ MODEL:
 LOSS:
   adv_loss: "hinge"
   apply_reg: "l2_mean"
+OPTIMIZATION:
+  d_updates_per_step: 2
