@@ -7,6 +7,7 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "vanilla"
+  apply_reg: "l2_mean"
 OPTIMIZATION:
   batch_size: 256
   d_updates_per_step: 2
