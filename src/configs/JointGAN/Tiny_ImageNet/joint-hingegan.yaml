@@ -8,6 +8,7 @@ MODEL:
 LOSS:
   adv_loss: "hinge"
   jointgan_object: "r"
+  apply_reg: "l2_mean"
 OPTIMIZATION:
   batch_size: 256
   g_lr: 0.0001
