@@ -9,4 +9,4 @@ LOSS:
   adv_loss: "vanilla"
   jointgan_object: "r"
 OPTIMIZATION:
-  d_updates_per_step: 2
+  d_updates_per_step: 1
