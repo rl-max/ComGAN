@@ -11,4 +11,4 @@ LOSS:
   apply_gp: True
   gp_lambda: 10.0
 OPTIMIZATION:
-  d_updates_per_step: 1
+  d_updates_per_step: 2

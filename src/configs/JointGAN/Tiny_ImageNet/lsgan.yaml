@@ -7,4 +7,4 @@ MODEL:
 LOSS:
   adv_loss: "least_square"
 OPTIMIZATION:
-  d_updates_per_step: 1
+  d_updates_per_step: 2
