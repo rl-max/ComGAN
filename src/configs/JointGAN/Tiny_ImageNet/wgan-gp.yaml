@@ -9,5 +9,3 @@ LOSS:
   apply_gp: False
   apply_reg: "l2_mean"
   gp_lambda: 10.0
-OPTIMIZATION:
-  d_updates_per_step: 1
