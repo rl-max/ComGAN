@@ -6,7 +6,8 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "wasserstein"
-  apply_gp: True
+  apply_gp: False
+  apply_reg: "l2_mean"
   gp_lambda: 10.0
 OPTIMIZATION:
   batch_size: 256
