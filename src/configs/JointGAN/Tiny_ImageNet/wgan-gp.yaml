@@ -10,6 +10,4 @@ LOSS:
   apply_reg: "l2_mean"
   gp_lambda: 10.0
 OPTIMIZATION:
-  beta1: 0.0
-  beta2: 0.999
   d_updates_per_step: 2
