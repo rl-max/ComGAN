@@ -4,9 +4,10 @@ DATA:
   num_classes: 200
 MODEL:
   backbone: "resnet"
-  jointgan_arch: "concat"
+  jointgan_arch: "ragan"
 LOSS:
   adv_loss: "least_square"
   jointgan_object: "r"
+  apply_reg: "l2_mean"
 OPTIMIZATION:
   d_updates_per_step: 2
