@@ -347,12 +347,17 @@ class WORKER(object):
                                                                                     d_logit2=ff_dict["adv_output"], 
                                                                                     DDP=self.DDP)
                         else:
-                            dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=real_dict["adv_output"], 
-                                                                                    d_logit2=real_dict2["adv_output"], 
-                                                                                    DDP=self.DDP)
-                            dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=fake_dict["adv_output"], 
-                                                                                    d_logit2=fake_dict2["adv_output"], 
-                                                                                    DDP=self.DDP)
+                            if self.LOSS.apply_reg == 'hf':
+                                dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=real_dict2["adv_output"], 
+                                                                                        d_logit2=fake_dict2["adv_output"], 
+                                                                                        DDP=self.DDP)
+                            else:
+                                dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=real_dict["adv_output"], 
+                                                                                        d_logit2=real_dict2["adv_output"], 
+                                                                                        DDP=self.DDP)
+                                dis_acml_loss += self.LOSS.reg_weight * self.LOSS.d_reg(d_logit1=fake_dict["adv_output"], 
+                                                                                        d_logit2=fake_dict2["adv_output"], 
+                                                                                        DDP=self.DDP)
 
                     # calculate class conditioning loss defined by "MODEL.d_cond_mtd"
                     if self.MODEL.d_cond_mtd in self.MISC.classifier_based_GAN:
