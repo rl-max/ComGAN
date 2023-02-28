@@ -383,7 +383,7 @@ def d_l1_joint_reg(d_logit1, d_logit2, DDP):
     return d_reg_loss.mean()
 
 def d_half_reg(d_logit1, d_logit2, DDP):
-    d_reg_loss = (d_logit1 + d_logit2.mean()) ** 2 + (d_logit2 + d_logit1.mean()) ** 2
+    d_reg_loss = 2 * (d_logit1 + d_logit2) ** 2
     return d_reg_loss.mean()
 
 
