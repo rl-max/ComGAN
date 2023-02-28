@@ -8,6 +8,7 @@ LOSS:
   adv_loss: "wasserstein"
   apply_gp: False
   apply_reg: "hf"
+  reg_weight: 0.1
   gp_lambda: 10.0
 OPTIMIZATION:
   beta1: 0.0
