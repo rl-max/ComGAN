@@ -4,7 +4,7 @@ DATA:
   num_classes: 200
 MODEL:
   backbone: "resnet"
-  jointgan_arch: "ragan"
+  jointgan_arch: "concat"
 LOSS:
   adv_loss: "vanilla"
   jointgan_object: "r"
