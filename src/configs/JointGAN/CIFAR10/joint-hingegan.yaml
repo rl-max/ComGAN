@@ -8,5 +8,6 @@ MODEL:
 LOSS:
   adv_loss: "hinge"
   jointgan_object: "f"
+  apply_reg: "l2"
 OPTIMIZATION:
   d_updates_per_step: 2
