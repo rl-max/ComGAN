@@ -8,7 +8,8 @@ MODEL:
 LOSS:
   adv_loss: "wasserstein"
   jointgan_object: "r"
-  apply_gp: True
+  apply_reg: "l2"
+  apply_gp: False
   gp_lambda: 10.0
 OPTIMIZATION:
   d_updates_per_step: 2
