@@ -7,7 +7,6 @@ MODEL:
   jointgan_arch: "concat"
 LOSS:
   adv_loss: "vanilla"
-  jointgan_object: "f"
-  apply_reg: "logistic"
+  jointgan_object: "s"
 OPTIMIZATION:
   d_updates_per_step: 2
