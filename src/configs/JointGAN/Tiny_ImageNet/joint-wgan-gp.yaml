@@ -7,7 +7,7 @@ MODEL:
   jointgan_arch: "concat"
 LOSS:
   adv_loss: "wasserstein"
-  jointgan_object: "r"
+  jointgan_object: "f"
   apply_reg: "l2"
   apply_gp: False
   gp_lambda: 10.0
