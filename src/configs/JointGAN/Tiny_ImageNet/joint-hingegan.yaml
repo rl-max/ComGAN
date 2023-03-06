@@ -8,4 +8,3 @@ MODEL:
 LOSS:
   adv_loss: "hinge"
   jointgan_object: "r"
-  apply_reg: "l2_mean"

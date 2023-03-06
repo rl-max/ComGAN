@@ -9,7 +9,6 @@ LOSS:
   adv_loss: "wasserstein"
   jointgan_object: "r"
   apply_reg: "l2"
-  reg_weight: 0.1
   apply_gp: False
   gp_lambda: 10.0
 OPTIMIZATION:
