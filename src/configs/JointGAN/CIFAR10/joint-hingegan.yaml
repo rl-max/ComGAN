@@ -4,9 +4,9 @@ DATA:
   num_classes: 10
 MODEL:
   backbone: "resnet"
-  jointgan_arch: "concat"
+  jointgan_arch: "ragan"
 LOSS:
   adv_loss: "hinge"
-  jointgan_object: "s"
+  jointgan_object: "r"
 OPTIMIZATION:
   d_updates_per_step: 2
