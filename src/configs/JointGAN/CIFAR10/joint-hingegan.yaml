@@ -9,5 +9,3 @@ LOSS:
   adv_loss: "hinge"
   apply_reg: "l2_mean"
   jointgan_object: "r"
-OPTIMIZATION:
-  d_updates_per_step: 5

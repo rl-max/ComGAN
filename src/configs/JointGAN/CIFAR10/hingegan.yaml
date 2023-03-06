@@ -6,5 +6,3 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "hinge"
-OPTIMIZATION:
-  d_updates_per_step: 2
