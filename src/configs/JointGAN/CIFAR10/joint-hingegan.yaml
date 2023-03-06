@@ -7,5 +7,4 @@ MODEL:
   jointgan_arch: "ragan"
 LOSS:
   adv_loss: "hinge"
-  apply_reg: "l2_mean"
   jointgan_object: "r"
