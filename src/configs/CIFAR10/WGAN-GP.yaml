@@ -5,7 +5,7 @@ DATA:
 LOSS:
   adv_loss: "wasserstein"
   apply_reg: "l2_mean"
-  apply_gp: True
+  apply_gp: False
   gp_lambda: 10.0
 OPTIMIZATION:
   total_steps: 50000
