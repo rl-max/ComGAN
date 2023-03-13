@@ -7,7 +7,7 @@ MODEL:
   jointgan_arch: "concat"
 LOSS:
   adv_loss: "least_square"
-  jointgan_object: "r"
+  jointgan_object: "f"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 60000
