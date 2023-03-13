@@ -6,10 +6,10 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "wasserstein"
-  apply_gp: False
-  apply_reg: "hf"
-  reg_weight: 0.01
+  apply_gp: True
   gp_lambda: 10.0
+  apply_reg: "l2_mean"
 OPTIMIZATION:
   beta1: 0.0
   beta2: 0.999
+  total_steps: 20000
