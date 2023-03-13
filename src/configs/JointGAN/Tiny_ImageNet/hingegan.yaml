@@ -7,3 +7,5 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "hinge"
+OPTIMIZATION:
+  total_steps: 20000
