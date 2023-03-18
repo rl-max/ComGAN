@@ -5,6 +5,7 @@ DATA:
 LOSS:
   adv_loss: "wasserstein"
   apply_reg: "hf"
+  reg_weight: 0.01
   apply_gp: False
   gp_lambda: 10.0
 OPTIMIZATION:
