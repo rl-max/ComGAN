@@ -9,7 +9,6 @@ LOSS:
   apply_gp: False
   gp_lambda: 10.0
   apply_reg: "hf"
-  reg_weight: 0.1
 OPTIMIZATION:
   beta1: 0.0
   beta2: 0.999
