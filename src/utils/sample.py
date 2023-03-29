@@ -135,17 +135,17 @@ def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, 
                                               device=device)
     if not is_train and RUN.langevin_sampling:
         zs = langevin_sampling(zs=zs,
-                               z_dim=z_dim,
-                               fake_labels=fake_labels,
-                               generator=generator,
-                               discriminator=discriminator,
-                               batch_size=batch_size,
-                               langevin_rate=RUN.langevin_rate,
-                               langevin_noise_std=RUN.langevin_noise_std,
-                               langevin_decay=RUN.langevin_decay,
-                               langevin_decay_steps=RUN.langevin_decay_steps,
-                               langevin_steps=RUN.langevin_steps,
-                               device=device)
+                              z_dim=z_dim,
+                              fake_labels=fake_labels,
+                              generator=generator,
+                              discriminator=discriminator,
+                              batch_size=batch_size,
+                              langevin_rate=RUN.langevin_rate,
+                              langevin_noise_std=RUN.langevin_noise_std,
+                              langevin_decay=RUN.langevin_decay,
+                              langevin_decay_steps=RUN.langevin_decay_steps,
+                              langevin_steps=RUN.langevin_steps,
+                              device=device)
 
     if is_stylegan:
         ws, fake_images = stylegan_generate_images(zs=zs,
