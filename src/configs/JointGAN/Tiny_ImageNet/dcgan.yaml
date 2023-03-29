@@ -1,0 +1,12 @@
+# standard dcgan!
+DATA:
+  name: "Tiny_ImageNet"
+  img_size: 64
+  num_classes: 200
+MODEL:
+  backbone: "resnet"
+LOSS:
+  adv_loss: "vanilla"
+  apply_reg: "l2_mean"
+OPTIMIZATION:
+  d_updates_per_step: 2

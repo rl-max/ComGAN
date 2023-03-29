@@ -4,5 +4,9 @@ DATA:
   num_classes: 10
 LOSS:
   adv_loss: "wasserstein"
-  apply_gp: True
+  apply_reg: "hf"
+  reg_weight: 0.1
+  apply_gp: False
   gp_lambda: 10.0
+OPTIMIZATION:
+  total_steps: 50000

@@ -134,7 +134,7 @@ class Generator(nn.Module):
 
         ops.init_weights(self.modules, g_init)
 
-    def forward(self, z, label, shared_label=None, eval=False):
+    def forward(self, z, label=None, shared_label=None, eval=False):
         affine_list = []
         if self.g_cond_mtd != "W/O":
             label = F.one_hot(label, num_classes=self.num_classes).to(torch.float32)

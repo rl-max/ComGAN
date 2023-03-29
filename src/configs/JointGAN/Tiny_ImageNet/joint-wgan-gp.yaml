@@ -1,0 +1,17 @@
+DATA:
+  name: "Tiny_ImageNet"
+  img_size: 64
+  num_classes: 200
+MODEL:
+  backbone: "resnet"
+  jointgan_arch: "concat"
+LOSS:
+  adv_loss: "wasserstein"
+  jointgan_object: "r"
+  apply_reg: "l2"
+  apply_gp: False
+  gp_lambda: 10.0
+OPTIMIZATION:
+  beta1: 0.0
+  beta2: 0.999
+  total_steps: 20000

@@ -1,0 +1,11 @@
+DATA:
+  name: "CIFAR10"
+  img_size: 32
+  num_classes: 10
+MODEL:
+  backbone: "resnet"
+LOSS:
+  adv_loss: "hinge"
+  apply_reg: "l2_mean"
+OPTIMIZATION:
+  total_steps: 50000

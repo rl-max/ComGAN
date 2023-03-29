@@ -1,0 +1,8 @@
+DATA:
+  name: "CIFAR100"
+  img_size: 32
+  num_classes: 100
+MODEL:
+  backbone: "resnet"
+LOSS:
+  adv_loss: "hinge"

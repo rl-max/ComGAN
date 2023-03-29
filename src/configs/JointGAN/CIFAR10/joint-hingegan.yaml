@@ -3,11 +3,10 @@ DATA:
   img_size: 32
   num_classes: 10
 MODEL:
+  backbone: "resnet"
   jointgan_arch: "concat"
 LOSS:
-  adv_loss: "wasserstein"
+  adv_loss: "hinge"
   jointgan_object: "s"
-  apply_gp: True
-  gp_lambda: 10.0
 OPTIMIZATION:
   total_steps: 50000

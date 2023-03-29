@@ -13,7 +13,7 @@ import random
 import warnings
 
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -150,7 +150,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                 random_flip=False,
                                 hdf5_path=None,
                                 normalize=True,
-                                load_data_in_memory=False)
+                                load_data_in_memory=False, 
+                                )
+        if cfgs.RUN.num_eval_data != -1:
+            indices = torch.randint(0, len(eval_dataset), (cfgs.RUN.num_eval_data,))
+            eval_dataset = Subset(eval_dataset, indices)
         if local_rank == 0:
             logger.info("Eval dataset size: {dataset_size}".format(dataset_size=len(eval_dataset)))
     else:
@@ -179,7 +183,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     cfgs.OPTIMIZATION.basket_size = cfgs.OPTIMIZATION.batch_size*\
                                     cfgs.OPTIMIZATION.acml_steps*\
                                     cfgs.OPTIMIZATION.d_updates_per_step
-
+    if cfgs.LOSS.apply_reg != 'N/A':
+        cfgs.OPTIMIZATION.basket_size *= 2
     # -----------------------------------------------------------------------------
     # define dataloaders for train and evaluation.
     # -----------------------------------------------------------------------------
@@ -220,7 +225,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                            RUN=cfgs.RUN,
                                            device=local_rank,
                                            logger=logger)
-    rGen = copy.deepcopy(Gen)
 
     if local_rank != 0:
         custom_ops.verbosity = "none"
@@ -382,7 +386,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
         num_eval=num_eval,
         loss_list_dict=loss_list_dict,
         metric_dict_during_train=metric_dict_during_train,
-        rGen=rGen
     )
 
     # -----------------------------------------------------------------------------

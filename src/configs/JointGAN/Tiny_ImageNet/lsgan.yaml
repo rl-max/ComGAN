@@ -1,0 +1,11 @@
+DATA:
+  name: "Tiny_ImageNet"
+  img_size: 64
+  num_classes: 200
+MODEL:
+  backbone: "resnet"
+LOSS:
+  adv_loss: "least_square"
+OPTIMIZATION:
+  d_updates_per_step: 2
+  total_steps: 60000
