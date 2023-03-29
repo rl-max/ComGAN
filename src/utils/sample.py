@@ -90,7 +90,6 @@ def sample_zy(z_prior, batch_size, z_dim, num_classes, truncation_factor, y_samp
 def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, y_sampler, radius, generator, discriminator,
                     is_train, LOSS, RUN, MODEL, device, is_stylegan, generator_mapping, generator_synthesis, style_mixing_p,
                     stylegan_update_emas, cal_trsp_cost):
-    
     if is_train:
         truncation_factor = -1.0
         lo_steps = LOSS.lo_steps4train
@@ -120,6 +119,7 @@ def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, 
         info_conti_c = torch.rand(batch_size, MODEL.info_num_conti_c, device=device) * 2 - 1
         zs = torch.cat((zs, info_conti_c), dim=1)
 
+    trsp_cost = None
     if LOSS.apply_lo:
         zs, trsp_cost = losses.latent_optimise(zs=zs,
                                             fake_labels=fake_labels,

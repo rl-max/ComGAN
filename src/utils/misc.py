@@ -504,7 +504,7 @@ def save_images_png(data_loader, generator, discriminator, is_generate, num_imag
             start = i * batch_size
             end = start + batch_size
             if is_generate:
-                images, labels, _, _, _, _, _ = sample.generate_images(z_prior=z_prior,
+                images, labels, _, _, _, _, _= sample.generate_images(z_prior=z_prior,
                                                                  truncation_factor=truncation_factor,
                                                                  batch_size=batch_size,
                                                                  z_dim=z_dim,
