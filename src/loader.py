@@ -150,11 +150,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
                                 random_flip=False,
                                 hdf5_path=None,
                                 normalize=True,
-                                load_data_in_memory=False, 
-                                )
-        if cfgs.RUN.num_eval_data != -1:
-            indices = torch.randint(0, len(eval_dataset), (cfgs.RUN.num_eval_data,))
-            eval_dataset = Subset(eval_dataset, indices)
+                                load_data_in_memory=False)
         if local_rank == 0:
             logger.info("Eval dataset size: {dataset_size}".format(dataset_size=len(eval_dataset)))
     else:
