@@ -272,10 +272,10 @@ class WORKER(object):
                     real_images = real_image_basket[batch_counter].to(self.local_rank, non_blocking=True)
                     real_labels = real_label_basket[batch_counter].to(self.local_rank, non_blocking=True)
                     # sample fake images and labels from p(G(z), y)
-                    fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = generate_images()
+                    fake_images, fake_labels, fake_images_eps, trsp_cost, ws, _, _ = generate_images()
                     if self.LOSS.apply_reg != 'N/A':
                         real_images2 = real_image_basket[batch_counter + 1].to(self.local_rank, non_blocking=True)
-                        fake_images2, _, _, _, _, _, _, _, _ = generate_images()
+                        fake_images2, _, _, _, _, _, _ = generate_images()
 
                     # blur images for stylegan3-r
                     if self.MODEL.backbone == "stylegan3" and self.STYLEGAN.stylegan3_cfg == "stylegan3-r" and self.blur_init_sigma != "N/A":
@@ -470,10 +470,12 @@ class WORKER(object):
 
                     # apply r1_reg inside of training loop
                     if self.LOSS.apply_r1_reg and not self.is_stylegan:
+                        assert not self.is_jointgan
                         self.r1_penalty = losses.cal_r1_reg(adv_output=real_dict["adv_output"], images=real_images, device=self.local_rank)
                         dis_acml_loss += self.LOSS.r1_lambda*self.r1_penalty
                     elif self.LOSS.apply_r1_reg and self.LOSS.r1_place == "inside_loop" and \
                         (self.OPTIMIZATION.d_updates_per_step*current_step + step_index) % self.STYLEGAN.d_reg_interval == 0:
+                        assert not self.is_jointgan
                         real_images.requires_grad_(True)
                         real_dict = self.Dis(self.AUG.series_augment(real_images), real_labels)
                         self.r1_penalty = losses.stylegan_cal_r1_reg(adv_output=real_dict["adv_output"],
@@ -601,14 +603,14 @@ class WORKER(object):
             self.OPTIMIZATION.g_optimizer.zero_grad()
             for acml_step in range(self.OPTIMIZATION.acml_steps):
                 with torch.cuda.amp.autocast() if self.RUN.mixed_precision and not self.is_stylegan else misc.dummy_context_mgr() as mpc:
-                    fake_images, fake_labels, zs, fake_images_eps, zs_eps, trsp_cost, ws, info_discrete_c, info_conti_c = generate_images()
+                    fake_images, fake_labels, fake_images_eps, trsp_cost, ws, info_discrete_c, info_conti_c = generate_images()
 
                     ref_images = None
                     if self.LOSS.jointgan_object == 'r':
                         real_image_basket, real_label_basket = self.sample_data_basket()
                         ref_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
                     if self.LOSS.jointgan_object == 'f':
-                        f_images, _, _, _, _, _, _, _, _ = generate_images()
+                        f_images, _, _, _, _, _, _ = generate_images()
                         ref_images = f_images.detach()
                     if self.LOSS.jointgan_object == 's':
                         s_images = fake_images.clone()
@@ -736,7 +738,7 @@ class WORKER(object):
                 assert not self.is_jointgan
                 self.OPTIMIZATION.g_optimizer.zero_grad()
                 for acml_index in range(self.OPTIMIZATION.acml_steps):
-                    fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = sample.generate_images(
+                    fake_images, fake_labels, fake_images_eps, trsp_cost, ws, _, _ = sample.generate_images(
                         z_prior=self.MODEL.z_prior,
                         truncation_factor=-1.0,
                         batch_size=self.OPTIMIZATION.batch_size // 2,
@@ -870,7 +872,7 @@ class WORKER(object):
             misc.make_GAN_untrainable(self.Gen, self.Gen_ema, self.Dis)
             generator, generator_mapping, generator_synthesis = self.gen_ctlr.prepare_generator()
 
-            fake_images, fake_labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+            fake_images, fake_labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                        truncation_factor=self.RUN.truncation_factor,
                                                                        batch_size=self.OPTIMIZATION.batch_size,
                                                                        z_dim=self.MODEL.z_dim,
@@ -1180,7 +1182,7 @@ class WORKER(object):
             resnet50_conv.eval()
 
             for c in tqdm(range(self.DATA.num_classes)):
-                fake_images, fake_labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+                fake_images, fake_labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                         truncation_factor=self.RUN.truncation_factor,
                                                                         batch_size=self.OPTIMIZATION.batch_size,
                                                                         z_dim=self.MODEL.z_dim,
@@ -1322,7 +1324,7 @@ class WORKER(object):
             num_batches = len(dataloader) // self.OPTIMIZATION.batch_size
             for i in range(num_batches):
                 real_images, real_labels = next(data_iter)
-                fake_images, fake_labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+                fake_images, fake_labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                           truncation_factor=self.RUN.truncation_factor,
                                                                           batch_size=self.OPTIMIZATION.batch_size,
                                                                           z_dim=self.MODEL.z_dim,
@@ -1420,7 +1422,7 @@ class WORKER(object):
 
                 save_output.clear()
 
-                fake_images, fake_labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+                fake_images, fake_labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                            truncation_factor=self.RUN.truncation_factor,
                                                                            batch_size=self.OPTIMIZATION.batch_size,
                                                                            z_dim=self.MODEL.z_dim,
@@ -1670,7 +1672,7 @@ class WORKER(object):
             train_top1_acc, train_top5_acc, train_loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
             for i, (images, labels) in enumerate(self.train_dataloader):
                 if GAN_train:
-                    images, labels, _, _, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+                    images, labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                      truncation_factor=self.RUN.truncation_factor,
                                                                      batch_size=self.OPTIMIZATION.batch_size,
                                                                      z_dim=self.MODEL.z_dim,
@@ -1734,7 +1736,7 @@ class WORKER(object):
         valid_top1_acc, valid_top5_acc, valid_loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
         for i, (images, labels) in enumerate(self.train_dataloader):
             if GAN_test:
-                images, labels, _, _, _, _, _, _,  _ = sample.generate_images(z_prior=self.MODEL.z_prior,
+                images, labels, _, _, _, _, _ = sample.generate_images(z_prior=self.MODEL.z_prior,
                                                                  truncation_factor=self.RUN.truncation_factor,
                                                                  batch_size=self.OPTIMIZATION.batch_size,
                                                                  z_dim=self.MODEL.z_dim,

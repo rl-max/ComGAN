@@ -89,69 +89,63 @@ def sample_zy(z_prior, batch_size, z_dim, num_classes, truncation_factor, y_samp
 
 def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, y_sampler, radius, generator, discriminator,
                     is_train, LOSS, RUN, MODEL, device, is_stylegan, generator_mapping, generator_synthesis, style_mixing_p,
-                    stylegan_update_emas, cal_trsp_cost, z_sampled=None):
+                    stylegan_update_emas, cal_trsp_cost):
     
-    trsp_cost, info_discrete_c, info_conti_c = None, None, None
-    zs_eps, fake_labels, fake_images_eps  = None, None, None
-
-    if z_sampled == None:
-        if is_train:
-            truncation_factor = -1.0
-            lo_steps = LOSS.lo_steps4train
-            apply_langevin = False
-        else:
-            lo_steps = LOSS.lo_steps4eval
-            if truncation_factor != -1:
-                if is_stylegan:
-                    assert 0 <= truncation_factor <= 1, "Stylegan truncation_factor must lie btw 0(strong truncation) ~ 1(no truncation)"
-                else:
-                    assert 0 <= truncation_factor, "truncation_factor must lie btw 0(strong truncation) ~ inf(no truncation)"
-
-        zs, fake_labels, zs_eps = sample_zy(z_prior=z_prior,
-                                            batch_size=batch_size,
-                                            z_dim=z_dim,
-                                            num_classes=num_classes,
-                                            truncation_factor=-1 if is_stylegan else truncation_factor,
-                                            y_sampler=y_sampler,
-                                            radius=radius,
-                                            device=device)
-        batch_size = fake_labels.shape[0]
-        info_discrete_c, info_conti_c = None, None
-        if MODEL.info_type in ["discrete", "both"]:
-            info_discrete_c = torch.randint(MODEL.info_dim_discrete_c,(batch_size, MODEL.info_num_discrete_c), device=device)
-            zs = torch.cat((zs, F.one_hot(info_discrete_c, MODEL.info_dim_discrete_c).view(batch_size, -1)), dim=1)
-        if MODEL.info_type in ["continuous", "both"]:
-            info_conti_c = torch.rand(batch_size, MODEL.info_num_conti_c, device=device) * 2 - 1
-            zs = torch.cat((zs, info_conti_c), dim=1)
-
-        if LOSS.apply_lo:
-            zs, trsp_cost = losses.latent_optimise(zs=zs,
-                                                fake_labels=fake_labels,
-                                                generator=generator,
-                                                discriminator=discriminator,
-                                                batch_size=batch_size,
-                                                lo_rate=LOSS.lo_rate,
-                                                lo_steps=lo_steps,
-                                                lo_alpha=LOSS.lo_alpha,
-                                                lo_beta=LOSS.lo_beta,
-                                                eval=not is_train,
-                                                cal_trsp_cost=cal_trsp_cost,
-                                                device=device)
-        if not is_train and RUN.langevin_sampling:
-            zs = langevin_sampling(zs=zs,
-                                z_dim=z_dim,
-                                fake_labels=fake_labels,
-                                generator=generator,
-                                discriminator=discriminator,
-                                batch_size=batch_size,
-                                langevin_rate=RUN.langevin_rate,
-                                langevin_noise_std=RUN.langevin_noise_std,
-                                langevin_decay=RUN.langevin_decay,
-                                langevin_decay_steps=RUN.langevin_decay_steps,
-                                langevin_steps=RUN.langevin_steps,
-                                device=device)
+    if is_train:
+        truncation_factor = -1.0
+        lo_steps = LOSS.lo_steps4train
+        apply_langevin = False
     else:
-        zs = z_sampled
+        lo_steps = LOSS.lo_steps4eval
+        if truncation_factor != -1:
+            if is_stylegan:
+                assert 0 <= truncation_factor <= 1, "Stylegan truncation_factor must lie btw 0(strong truncation) ~ 1(no truncation)"
+            else:
+                assert 0 <= truncation_factor, "truncation_factor must lie btw 0(strong truncation) ~ inf(no truncation)"
+
+    zs, fake_labels, zs_eps = sample_zy(z_prior=z_prior,
+                                        batch_size=batch_size,
+                                        z_dim=z_dim,
+                                        num_classes=num_classes,
+                                        truncation_factor=-1 if is_stylegan else truncation_factor,
+                                        y_sampler=y_sampler,
+                                        radius=radius,
+                                        device=device)
+    batch_size = fake_labels.shape[0]
+    info_discrete_c, info_conti_c = None, None
+    if MODEL.info_type in ["discrete", "both"]:
+        info_discrete_c = torch.randint(MODEL.info_dim_discrete_c,(batch_size, MODEL.info_num_discrete_c), device=device)
+        zs = torch.cat((zs, F.one_hot(info_discrete_c, MODEL.info_dim_discrete_c).view(batch_size, -1)), dim=1)
+    if MODEL.info_type in ["continuous", "both"]:
+        info_conti_c = torch.rand(batch_size, MODEL.info_num_conti_c, device=device) * 2 - 1
+        zs = torch.cat((zs, info_conti_c), dim=1)
+
+    if LOSS.apply_lo:
+        zs, trsp_cost = losses.latent_optimise(zs=zs,
+                                            fake_labels=fake_labels,
+                                            generator=generator,
+                                            discriminator=discriminator,
+                                            batch_size=batch_size,
+                                            lo_rate=LOSS.lo_rate,
+                                            lo_steps=lo_steps,
+                                            lo_alpha=LOSS.lo_alpha,
+                                            lo_beta=LOSS.lo_beta,
+                                            eval=not is_train,
+                                            cal_trsp_cost=cal_trsp_cost,
+                                            device=device)
+    if not is_train and RUN.langevin_sampling:
+        zs = langevin_sampling(zs=zs,
+                            z_dim=z_dim,
+                            fake_labels=fake_labels,
+                            generator=generator,
+                            discriminator=discriminator,
+                            batch_size=batch_size,
+                            langevin_rate=RUN.langevin_rate,
+                            langevin_noise_std=RUN.langevin_noise_std,
+                            langevin_decay=RUN.langevin_decay,
+                            langevin_decay_steps=RUN.langevin_decay_steps,
+                            langevin_steps=RUN.langevin_steps,
+                            device=device)
 
     if is_stylegan:
         ws, fake_images = stylegan_generate_images(zs=zs,
@@ -184,7 +178,7 @@ def generate_images(z_prior, truncation_factor, batch_size, z_dim, num_classes, 
     else:
         fake_images_eps = None
 
-    return fake_images, fake_labels, zs, fake_images_eps, zs_eps, trsp_cost, ws, info_discrete_c, info_conti_c
+    return fake_images, fake_labels, fake_images_eps, trsp_cost, ws, info_discrete_c, info_conti_c
 
 def stylegan_generate_images(zs, fake_labels, num_classes, style_mixing_p, update_emas,
                              generator_mapping, generator_synthesis, truncation_psi, truncation_cutoff):
