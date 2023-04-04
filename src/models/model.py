@@ -19,7 +19,7 @@ import utils.misc as misc
 def load_generator_discriminator(DATA, LOSS, OPTIMIZATION, MODEL, STYLEGAN, MODULES, RUN, device, logger):
     if device == 0:
         logger.info("Build a Generative Adversarial Network.")
-    if LOSS.jointgan_object == 'N/A' or MODEL.jointgan_arch == 'rgan' or MODEL.jointgan_arch == 'ragan':
+    if LOSS.jointgan_object == 'N/A' or MODEL.jointgan_arch in ['rgan', 'ragan']:
         base_dir = 'models' 
     else:
         base_dir = 'models.jointgan'

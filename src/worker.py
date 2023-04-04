@@ -106,7 +106,7 @@ class WORKER(object):
         self.MISC = cfgs.MISC
         self.is_stylegan = cfgs.MODEL.backbone in ["stylegan2", "stylegan3"]
         self.is_jointgan = cfgs.LOSS.jointgan_object != "N/A"
-        self.is_rgan = self.is_jointgan and (cfgs.MODEL.jointgan_arch == "rgan" or cfgs.MODEL.jointgan_arch == "ragan")
+        self.is_rgan = self.is_jointgan and cfgs.MODEL.jointgan_arch in ["rgan", "ragan"]
         self.input_concat = self.is_jointgan and not self.is_rgan
         self.effective_batch_size = self.OPTIMIZATION.batch_size * self.OPTIMIZATION.acml_steps
         self.blur_init_sigma = self.STYLEGAN.blur_init_sigma
