@@ -644,7 +644,7 @@ class WORKER(object):
                         real_dict = self.Dis(real_data_)
                     else:
                         if self.LOSS.apply_ref:
-                            fake_data_ = torch.concat([fake_images_, ref_images_])
+                            fake_data_ = torch.concat([fake_images_, ref_images_], dim=1)
                         else:
                             fake_data_ = fake_images_
                     fake_dict = self.Dis(fake_data_)
