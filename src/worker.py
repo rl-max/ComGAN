@@ -106,7 +106,7 @@ class WORKER(object):
         self.MISC = cfgs.MISC
         self.is_stylegan = cfgs.MODEL.backbone in ["stylegan2", "stylegan3"]
         self.is_jointgan = cfgs.LOSS.jointgan_object != "N/A"
-        self.is_rgan = self.is_jointgan and (cfgs.MODEL.jointgan_arch == "rgan" or cfgs.MODEL.jointgan_arch == "ragan")
+        self.is_rgan = self.is_jointgan and cfgs.MODEL.jointgan_arch in ["rgan", "ragan"]
         self.input_concat = self.is_jointgan and not self.is_rgan
         self.effective_batch_size = self.OPTIMIZATION.batch_size * self.OPTIMIZATION.acml_steps
         self.blur_init_sigma = self.STYLEGAN.blur_init_sigma
@@ -199,6 +199,7 @@ class WORKER(object):
             wandb.config.lsgan_fake_target = self.LOSS.lsgan_fake_target
             wandb.config.lsgan_gen_center = self.LOSS.lsgan_gen_center
             wandb.config.apply_gp = self.LOSS.apply_gp
+            wandb.config.apply_ref = self.LOSS.apply_ref
 
         self.start_time = datetime.now()
 
@@ -273,7 +274,7 @@ class WORKER(object):
                     real_labels = real_label_basket[batch_counter].to(self.local_rank, non_blocking=True)
                     # sample fake images and labels from p(G(z), y)
                     fake_images, fake_labels, _, fake_images_eps, _, trsp_cost, ws, _, _ = generate_images()
-                    if self.LOSS.apply_reg != 'N/A':
+                    if self.LOSS.apply_reg != 'N/A' or self.LOSS.apply_ref:
                         real_images2 = real_image_basket[batch_counter + 1].to(self.local_rank, non_blocking=True)
                         fake_images2, _, _, _, _, _, _, _, _ = generate_images()
 
@@ -286,19 +287,19 @@ class WORKER(object):
                             f = torch.arange(-blur_size, blur_size + 1, device=real_images.device).div(blur_sigma).square().neg().exp2()
                             real_images = upfirdn2d.filter2d(real_images, f / f.sum())
                             fake_images = upfirdn2d.filter2d(fake_images, f / f.sum())
-                            if self.LOSS.apply_reg != 'N/A':
+                            if self.LOSS.apply_reg != 'N/A' or self.LOSS.apply_ref:
                                 real_images2 = upfirdn2d.filter2d(real_images2, f / f.sum())
                                 fake_images2 = upfirdn2d.filter2d(fake_images2, f / f.sum())
 
                     # shuffle real and fake images (APA)
                     if self.AUG.apply_apa:
                         real_images = apa_aug.apply_apa_aug(real_images, fake_images.detach(), self.aa_p, self.local_rank)
-                        if self.LOSS.apply_reg != 'N/A':
+                        if self.LOSS.apply_reg != 'N/A' or self.LOSS.apply_ref:
                             real_images2 = apa_aug.apply_apa_aug(real_images2, fake_images2.detach(), self.aa_p, self.local_rank)
 
                     real_images_ = self.AUG.series_augment(real_images)
                     fake_images_ = self.AUG.series_augment(fake_images)
-                    if self.LOSS.apply_reg != 'N/A':
+                    if self.LOSS.apply_reg != 'N/A' or self.LOSS.apply_ref:
                         real_images2_ = self.AUG.series_augment(real_images2)
                         fake_images2_ = self.AUG.series_augment(fake_images2)
             
@@ -308,6 +309,12 @@ class WORKER(object):
                             ff_images_ = torch.cat([fake_images_, fake_images2_], dim=1)
                         real_images_, fake_images_ = self.concat(real_images_, fake_images_)
                         real_images, fake_images = self.concat(real_images, fake_images)
+                    
+                    if self.apply_ref:
+                        real_images_, fake_images_ = torch.concat([real_images_, real_images2_], dim=1), \
+                                                     torch.concat([fake_images_, real_images2_], dim=1)
+                        real_images, fake_images = torch.concat([real_images, real_images2], dim=1), \
+                                                   torch.concat([fake_images, real_images2], dim=1)
                         
                     real_dict = self.Dis(real_images_, real_labels)
                     fake_dict = self.Dis(fake_images_, fake_labels, adc_fake=self.adc_fake)
@@ -604,7 +611,7 @@ class WORKER(object):
                     fake_images, fake_labels, zs, fake_images_eps, zs_eps, trsp_cost, ws, info_discrete_c, info_conti_c = generate_images()
 
                     ref_images = None
-                    if self.LOSS.jointgan_object == 'r':
+                    if self.LOSS.jointgan_object == 'r' or self.LOSS.apply_ref:
                         real_image_basket, real_label_basket = self.sample_data_basket()
                         ref_images = real_image_basket[0].to(self.local_rank, non_blocking=True)
                     if self.LOSS.jointgan_object == 'f':
@@ -636,7 +643,10 @@ class WORKER(object):
                             real_data_, fake_data_ = self.concat(ref_images_, fake_images_)
                         real_dict = self.Dis(real_data_)
                     else:
-                        fake_data_ = fake_images_
+                        if self.LOSS.apply_ref:
+                            fake_data_ = torch.concat([fake_images_, ref_images_])
+                        else:
+                            fake_data_ = fake_images_
                     fake_dict = self.Dis(fake_data_)
 
                     # accumulate discriminator output informations for logging
