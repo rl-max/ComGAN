@@ -310,7 +310,7 @@ class WORKER(object):
                         real_images_, fake_images_ = self.concat(real_images_, fake_images_)
                         real_images, fake_images = self.concat(real_images, fake_images)
                     
-                    if self.apply_ref:
+                    if self.LOSS.apply_ref:
                         real_images_, fake_images_ = torch.concat([real_images_, real_images2_], dim=1), \
                                                      torch.concat([fake_images_, real_images2_], dim=1)
                         real_images, fake_images = torch.concat([real_images, real_images2], dim=1), \
