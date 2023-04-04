@@ -225,6 +225,8 @@ class Configurations(object):
         self.LOSS.apply_reg = "N/A"
         # regularization weight
         self.LOSS.reg_weight = 1.0
+        # whether to apply reference sample 
+        self.LOSS.apply_ref = False
         # custom targets for lsgan
         self.LOSS.lsgan_real_target = 1
         self.LOSS.lsgan_fake_target = -1
@@ -753,6 +755,9 @@ class Configurations(object):
 
         if self.LOSS.adv_loss == "wasserstein":
             assert self.MODEL.jointgan_arch == "concat", "rgan and ragan cannot be combined with wassersteingan "
+
+        if self.LOSS.apply_ref:
+            assert self.LOSS.jointgan_object == "N/A", "apply_ref and jointgan cannot be used together"
 
         if self.RUN.distributed_data_parallel and self.RUN.mixed_precision:
             print("-"*120)
