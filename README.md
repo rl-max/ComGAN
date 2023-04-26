@@ -26,7 +26,7 @@ Then, excute this.
 
 ### Configurations
 
-To run other losses, corresponding files can be found under `src/configs/JointGAN/CIFAR10/`(e.g. Use "joint-lsgan.yaml" for least square loss) and similarly for Tiny-ImageNet. For the arguments of the above commmand such as `-metric`, `-t`, and `-eval_backbone`, please refer to the StudioGAN documentation. 
+To run other losses, corresponding files can be found under `src/configs/JointGAN/CIFAR10/`(e.g. Use "joint-lsgan.yaml" for least square loss) and similarly for Tiny-ImageNet. For the arguments of the above commmand such as `-metric`, `-t`, and `-eval_backbone`, please refer to the [StudioGAN documentation](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN). 
 
 In each of yaml files, you will have the following options that are components of ComGAN.
 
