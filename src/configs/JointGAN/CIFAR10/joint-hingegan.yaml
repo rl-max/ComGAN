@@ -7,6 +7,6 @@ MODEL:
   jointgan_arch: "concat"
 LOSS:
   adv_loss: "hinge"
-  jointgan_object: "s"
+  jointgan_object: "r"
 OPTIMIZATION:
   total_steps: 50000

@@ -4,11 +4,10 @@ DATA:
   num_classes: 200
 MODEL:
   backbone: "resnet"
-  jointgan_arch: "rgan"
+  jointgan_arch: "concat"
 LOSS:
   adv_loss: "vanilla"
   jointgan_object: "r"
-  apply_reg: "l2"
 OPTIMIZATION:
   d_updates_per_step: 2
   total_steps: 60000
