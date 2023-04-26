@@ -1,8 +1,7 @@
 # ComGAN PyTorch Implementation. 
 This is a implementation of our work ComGAN[1] built upon StudioGAN framework[2]. Our paper is avaiable at [here](https://arxiv.org/abs/2304.12098).
-
-
-**To get started**, please read the StudioGAN documentation [here](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN) and finish the basic set up. \
+### To Get Started
+Please read the StudioGAN documentation at [here](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN) and finish the basic set up. \
 After all, you can run, for example, SComGAN by executing the following command. 
 
 ```
