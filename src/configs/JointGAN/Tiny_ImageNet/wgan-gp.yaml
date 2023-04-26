@@ -6,9 +6,8 @@ MODEL:
   backbone: "resnet"
 LOSS:
   adv_loss: "wasserstein"
-  apply_gp: False
+  apply_gp: True
   gp_lambda: 10.0
-  apply_reg: "hf"
 OPTIMIZATION:
   beta1: 0.0
   beta2: 0.999
